@@ -1,0 +1,226 @@
+version: 2
+
+models:
+  - name: resorts
+    description: >
+      One row per ski resort on the index, with the SNOTEL station or stations that stand
+      in for it. A station is a proxy: it is near the resort, not the resort's own stake.
+    columns:
+      - name: resort_id
+        description: "Stable slug, for example 'alta' or 'park-city'. Primary key."
+        data_tests: [unique, not_null]
+      - name: resort_name
+        description: "Display name, for example 'Alta' or 'Park City Mountain'."
+        data_tests: [unique, not_null]
+      - name: area
+        description: "Canyon or range the resort sits in, for example 'Little Cottonwood Canyon'."
+      - name: latitude
+        description: Latitude of the base area, decimal degrees.
+      - name: longitude
+        description: "Longitude of the base area, decimal degrees (negative: west)."
+      - name: base_elev_ft
+        description: Published base elevation in feet.
+      - name: summit_elev_ft
+        description: Published summit elevation in feet.
+      - name: station_names
+        description: SNOTEL station or stations used for this resort, heaviest weight first.
+      - name: station_count
+        description: Number of stations blended for this resort (1 or 2).
+      - name: nearest_station_km
+        description: Distance from the resort base to its nearest station, kilometers.
+      - name: station_elev_ft
+        description: Weighted elevation of the stations in feet.
+      - name: proxy_quality
+        description: >
+          How close the stations are: 'on_mountain' (within 3 km), 'nearby' (within 8 km),
+          or 'regional' (farther; treat the numbers as a regional signal).
+        data_tests:
+          - accepted_values: {arguments: {values: [on_mountain, nearby, regional]}}
+
+  - name: resort_daily
+    description: >
+      The morning snow report: one row per resort per day, from September of the previous
+      season to the latest reading. Values dated D describe 00:00 on D and the hours before
+      it, so new_snow_24h_in on D fell during calendar day D-1. New snow is settled snow
+      measured at a station near the resort and reads lower than a resort's own total.
+    data_tests:
+      - unique_combination: {arguments: {columns: [resort_id, date]}}
+    columns:
+      - name: resort_id
+        description: Resort slug. Joins to resorts.resort_id and powder_score.resort_id.
+        data_tests:
+          - not_null
+          - relationships: {arguments: {to: ref('resorts'), field: resort_id}}
+      - name: resort_name
+        description: Display name of the resort.
+        data_tests: [not_null]
+      - name: date
+        description: Report date (DATE). The reading was taken at 00:00 that morning.
+        data_tests: [not_null]
+      - name: water_year
+        description: >
+          Season label (INTEGER). A water year runs 1 October to 30 September and is named
+          for the year it ends in, so winter 2025-26 is water year 2026.
+        data_tests: [not_null]
+      - name: snow_depth_in
+        description: Snow on the ground, inches.
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0, max_value: 400}}
+      - name: swe_in
+        description: Snow water equivalent, inches of water held in the snowpack.
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0, max_value: 150}}
+      - name: new_snow_24h_in
+        description: Estimated new snow in the 24 hours before the reading, inches.
+        data_tests:
+          - not_null
+          - accepted_range: {arguments: {min_value: 0, max_value: 60}}
+      - name: new_snow_72h_in
+        description: Estimated new snow over the last 3 days (72 hours), inches.
+        data_tests:
+          - not_null
+          - accepted_range: {arguments: {min_value: 0, max_value: 150}}
+      - name: new_snow_7d_in
+        description: Estimated new snow over the last 7 days, inches.
+        data_tests:
+          - not_null
+      - name: season_snowfall_in
+        description: Running total of new snow since 1 October of the row's water year, inches.
+        data_tests:
+          - not_null
+      - name: days_since_snow
+        description: Days since the last day with at least 1 inch of new snow. 0 on a snow day. Null before the first snowfall in the data.
+      - name: swe_gain_24h_in
+        description: Increase in snow water equivalent over the last 24 hours, inches of water (0 if it fell).
+      - name: density_24h_pct
+        description: Water content of the last 24 hours of new snow, percent (water that fell as snow / new snow x 100, at most 20). Lower is lighter. Null when less than 1 inch fell.
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0, max_value: 20.05}}
+      - name: density_72h_pct
+        description: Water content of the last 72 hours of new snow, percent. Lower is lighter powder. Null when less than 1 inch fell.
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0, max_value: 20.05}}
+      - name: temp_obs_f
+        description: Air temperature at the midnight reading, degrees F.
+      - name: temp_avg_24h_f
+        description: Mean air temperature over the previous calendar day, degrees F.
+        data_tests:
+          - accepted_range: {arguments: {min_value: -60, max_value: 120}}
+      - name: temp_min_24h_f
+        description: Lowest air temperature over the previous calendar day, degrees F.
+      - name: temp_max_24h_f
+        description: Highest air temperature over the previous calendar day, degrees F.
+      - name: temp_avg_72h_f
+        description: Mean air temperature over the previous 3 days, degrees F.
+      - name: forecast_snow_72h_in
+        description: National Weather Service snowfall forecast for the next 72 hours, inches. Only filled on the day the pipeline ran (the latest date); null on every earlier date.
+      - name: forecast_snow_day_1_in
+        description: Forecast snowfall for hours 0 to 24, inches. Null except on the latest date.
+      - name: forecast_snow_day_2_in
+        description: Forecast snowfall for hours 24 to 48, inches. Null except on the latest date.
+      - name: forecast_snow_day_3_in
+        description: Forecast snowfall for hours 48 to 72, inches. Null except on the latest date.
+      - name: forecast_precip_72h_in
+        description: Forecast liquid precipitation for the next 72 hours, inches. Null except on the latest date.
+      - name: forecast_temp_min_72h_f
+        description: Lowest forecast air temperature over the next 72 hours, degrees F. Null except on the latest date.
+      - name: has_missing_reading
+        description: True when a station reading was missing that day and the last value was carried forward.
+
+  - name: powder_score
+    description: >
+      The powder score, 0 to 100, one row per resort per day, with its six components.
+      score = 100 x sum(weight x component) / sum(weights of known components). Each
+      component is a 0-to-1 ramp between two anchors; weights and anchors live in the
+      powder_score_weights seed. The *_points columns add up to powder_score exactly.
+      The forecast component is null on replayed days, where the other weights are rescaled.
+    data_tests:
+      - unique_combination: {arguments: {columns: [resort_id, date]}}
+      - unique_combination: {arguments: {columns: [date, rank]}}
+    columns:
+      - name: resort_id
+        description: Resort slug. Joins to resorts.resort_id and resort_daily.resort_id.
+        data_tests:
+          - not_null
+          - relationships: {arguments: {to: ref('resorts'), field: resort_id}}
+      - name: resort_name
+        description: Display name of the resort.
+      - name: date
+        description: Report date (DATE). Joins to resort_daily.date.
+        data_tests: [not_null]
+      - name: powder_score
+        description: Powder score from 0 (nothing to ski) to 100 (deep, light, cold, and more coming).
+        data_tests:
+          - not_null
+          - accepted_range: {arguments: {min_value: 0, max_value: 100}}
+      - name: tier
+        description: "Label for the score: 'epic' (75+), 'powder' (55+), 'soft' (35+), 'firm' (15+), 'off' (below 15)."
+        data_tests:
+          - not_null
+          - accepted_values: {arguments: {values: [epic, powder, soft, firm, 'off']}}
+      - name: rank
+        description: Rank among all resorts on that date, 1 = best. Ties break on 72-hour snow, then depth, then name.
+        data_tests:
+          - not_null
+          - accepted_range: {arguments: {min_value: 1, max_value: 50}}
+      - name: fresh_24h_score
+        description: New snow in the last 24 hours as a 0-to-1 score (1 at 12 inches or more).
+      - name: fresh_72h_score
+        description: New snow in the last 72 hours as a 0-to-1 score (1 at 24 inches or more).
+      - name: density_score
+        description: Lightness of the storm snow as a 0-to-1 score (1 at 8% water or less, 0 at 18% or more), scaled down when under 6 inches fell in 72 hours.
+      - name: cold_score
+        description: Cold preservation as a 0-to-1 score (1 at a 72-hour mean of 18 F or colder, 0 at 36 F or warmer, 0 on bare ground).
+      - name: base_score
+        description: Snow depth as a 0-to-1 score (1 at 60 inches or more).
+      - name: forecast_score
+        description: Forecast snowfall for the next 72 hours as a 0-to-1 score (1 at 12 inches or more). Null when there is no forecast for the date.
+      - name: fresh_24h_points
+        description: Points the 24-hour snow contributes to powder_score.
+      - name: fresh_72h_points
+        description: Points the 72-hour snow contributes to powder_score.
+      - name: density_points
+        description: Points snow density contributes to powder_score.
+      - name: cold_points
+        description: Points cold preservation contributes to powder_score.
+      - name: base_points
+        description: Points base depth contributes to powder_score.
+      - name: forecast_points
+        description: Points the forecast contributes to powder_score. Null when there is no forecast for the date.
+      - name: weight_known
+        description: Sum of the weights of the components that were known that day (1.0 with a forecast, 0.9 without).
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0.5, max_value: 1}}
+
+unit_tests:
+  - name: powder_score_formula_cases
+    description: >
+      A perfect day with and without a forecast, the two gates (bare ground earns nothing
+      for being cold; a dusting earns little for being light), and a middling day worked
+      by hand.
+    model: powder_score
+    given:
+      - input: ref('resort_daily')
+        rows:
+          - {resort_id: perfect_replay, resort_name: A, date: 2026-01-01, new_snow_24h_in: 12, new_snow_72h_in: 24, density_72h_pct: 8, temp_avg_72h_f: 18, snow_depth_in: 60, forecast_snow_72h_in: null}
+          - {resort_id: perfect_live, resort_name: B, date: 2026-01-02, new_snow_24h_in: 12, new_snow_72h_in: 24, density_72h_pct: 8, temp_avg_72h_f: 18, snow_depth_in: 60, forecast_snow_72h_in: 0}
+          - {resort_id: bare_and_cold, resort_name: C, date: 2026-01-03, new_snow_24h_in: 0, new_snow_72h_in: 0, density_72h_pct: null, temp_avg_72h_f: 5, snow_depth_in: 0, forecast_snow_72h_in: null}
+          - {resort_id: light_dusting, resort_name: D, date: 2026-01-04, new_snow_24h_in: 1, new_snow_72h_in: 1, density_72h_pct: 5, temp_avg_72h_f: 36, snow_depth_in: 0, forecast_snow_72h_in: null}
+          - {resort_id: middling, resort_name: E, date: 2026-01-05, new_snow_24h_in: 6, new_snow_72h_in: 12, density_72h_pct: 13, temp_avg_72h_f: 27, snow_depth_in: 30, forecast_snow_72h_in: 6}
+      - input: ref('powder_score_weights')
+        format: csv
+        fixture: powder_score_weights_fixture
+      - input: ref('powder_tiers')
+        rows:
+          - {tier: epic, min_score: 75}
+          - {tier: powder, min_score: 55}
+          - {tier: soft, min_score: 35}
+          - {tier: firm, min_score: 15}
+          - {tier: "off", min_score: 0}
+    expect:
+      rows:
+        - {resort_id: perfect_replay, powder_score: 100.0, tier: epic, density_score: 1, cold_score: 1, forecast_score: null, forecast_points: null, weight_known: 0.9}
+        - {resort_id: perfect_live, powder_score: 90.0, tier: epic, density_score: 1, cold_score: 1, forecast_score: 0, forecast_points: 0, weight_known: 1.0}
+        - {resort_id: bare_and_cold, powder_score: 0.0, tier: "off", density_score: 0, cold_score: 0, forecast_score: null, forecast_points: null, weight_known: 0.9}
+        - {resort_id: light_dusting, powder_score: 6.9, tier: "off", density_score: 0.167, cold_score: 0, forecast_score: null, forecast_points: null, weight_known: 0.9}
+        - {resort_id: middling, powder_score: 50.0, tier: soft, density_score: 0.5, cold_score: 0.5, forecast_score: 0.5, forecast_points: 5.0, weight_known: 1.0}

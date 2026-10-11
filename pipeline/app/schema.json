@@ -1,0 +1,358 @@
+{
+  "tables": [
+    {
+      "name": "resorts",
+      "description": "One row per ski resort on the index, with the SNOTEL station or stations that stand in for it. A station is a proxy: it is near the resort, not the resort's own stake.",
+      "columns": [
+        {
+          "name": "resort_id",
+          "type": "VARCHAR",
+          "description": "Stable slug, for example 'alta' or 'park-city'. Primary key."
+        },
+        {
+          "name": "resort_name",
+          "type": "VARCHAR",
+          "description": "Display name, for example 'Alta' or 'Park City Mountain'."
+        },
+        {
+          "name": "area",
+          "type": "VARCHAR",
+          "description": "Canyon or range the resort sits in, for example 'Little Cottonwood Canyon'."
+        },
+        {
+          "name": "latitude",
+          "type": "DOUBLE",
+          "description": "Latitude of the base area, decimal degrees."
+        },
+        {
+          "name": "longitude",
+          "type": "DOUBLE",
+          "description": "Longitude of the base area, decimal degrees (negative: west)."
+        },
+        {
+          "name": "base_elev_ft",
+          "type": "INTEGER",
+          "description": "Published base elevation in feet."
+        },
+        {
+          "name": "summit_elev_ft",
+          "type": "INTEGER",
+          "description": "Published summit elevation in feet."
+        },
+        {
+          "name": "station_names",
+          "type": "VARCHAR",
+          "description": "SNOTEL station or stations used for this resort, heaviest weight first."
+        },
+        {
+          "name": "station_count",
+          "type": "INTEGER",
+          "description": "Number of stations blended for this resort (1 or 2)."
+        },
+        {
+          "name": "nearest_station_km",
+          "type": "DOUBLE",
+          "description": "Distance from the resort base to its nearest station, kilometers."
+        },
+        {
+          "name": "station_elev_ft",
+          "type": "INTEGER",
+          "description": "Weighted elevation of the stations in feet."
+        },
+        {
+          "name": "proxy_quality",
+          "type": "VARCHAR",
+          "description": "How close the stations are: 'on_mountain' (within 3 km), 'nearby' (within 8 km), or 'regional' (farther; treat the numbers as a regional signal)."
+        }
+      ]
+    },
+    {
+      "name": "resort_daily",
+      "description": "The morning snow report: one row per resort per day, from September of the previous season to the latest reading. Values dated D describe 00:00 on D and the hours before it, so new_snow_24h_in on D fell during calendar day D-1. New snow is settled snow measured at a station near the resort and reads lower than a resort's own total.",
+      "columns": [
+        {
+          "name": "resort_id",
+          "type": "VARCHAR",
+          "description": "Resort slug. Joins to resorts.resort_id and powder_score.resort_id."
+        },
+        {
+          "name": "resort_name",
+          "type": "VARCHAR",
+          "description": "Display name of the resort."
+        },
+        {
+          "name": "date",
+          "type": "DATE",
+          "description": "Report date (DATE). The reading was taken at 00:00 that morning."
+        },
+        {
+          "name": "water_year",
+          "type": "INTEGER",
+          "description": "Season label (INTEGER). A water year runs 1 October to 30 September and is named for the year it ends in, so winter 2025-26 is water year 2026."
+        },
+        {
+          "name": "snow_depth_in",
+          "type": "DOUBLE",
+          "description": "Snow on the ground, inches."
+        },
+        {
+          "name": "swe_in",
+          "type": "DOUBLE",
+          "description": "Snow water equivalent, inches of water held in the snowpack."
+        },
+        {
+          "name": "new_snow_24h_in",
+          "type": "DOUBLE",
+          "description": "Estimated new snow in the 24 hours before the reading, inches."
+        },
+        {
+          "name": "new_snow_72h_in",
+          "type": "DOUBLE",
+          "description": "Estimated new snow over the last 3 days (72 hours), inches."
+        },
+        {
+          "name": "new_snow_7d_in",
+          "type": "DOUBLE",
+          "description": "Estimated new snow over the last 7 days, inches."
+        },
+        {
+          "name": "season_snowfall_in",
+          "type": "DOUBLE",
+          "description": "Running total of new snow since 1 October of the row's water year, inches."
+        },
+        {
+          "name": "days_since_snow",
+          "type": "INTEGER",
+          "description": "Days since the last day with at least 1 inch of new snow. 0 on a snow day. Null before the first snowfall in the data."
+        },
+        {
+          "name": "swe_gain_24h_in",
+          "type": "DOUBLE",
+          "description": "Increase in snow water equivalent over the last 24 hours, inches of water (0 if it fell)."
+        },
+        {
+          "name": "density_24h_pct",
+          "type": "DOUBLE",
+          "description": "Water content of the last 24 hours of new snow, percent (water that fell as snow / new snow x 100, at most 20). Lower is lighter. Null when less than 1 inch fell."
+        },
+        {
+          "name": "density_72h_pct",
+          "type": "DOUBLE",
+          "description": "Water content of the last 72 hours of new snow, percent. Lower is lighter powder. Null when less than 1 inch fell."
+        },
+        {
+          "name": "temp_obs_f",
+          "type": "DOUBLE",
+          "description": "Air temperature at the midnight reading, degrees F."
+        },
+        {
+          "name": "temp_avg_24h_f",
+          "type": "DOUBLE",
+          "description": "Mean air temperature over the previous calendar day, degrees F."
+        },
+        {
+          "name": "temp_min_24h_f",
+          "type": "DOUBLE",
+          "description": "Lowest air temperature over the previous calendar day, degrees F."
+        },
+        {
+          "name": "temp_max_24h_f",
+          "type": "DOUBLE",
+          "description": "Highest air temperature over the previous calendar day, degrees F."
+        },
+        {
+          "name": "temp_avg_72h_f",
+          "type": "DOUBLE",
+          "description": "Mean air temperature over the previous 3 days, degrees F."
+        },
+        {
+          "name": "forecast_snow_72h_in",
+          "type": "DOUBLE",
+          "description": "National Weather Service snowfall forecast for the next 72 hours, inches. Only filled on the day the pipeline ran (the latest date); null on every earlier date."
+        },
+        {
+          "name": "forecast_snow_day_1_in",
+          "type": "DOUBLE",
+          "description": "Forecast snowfall for hours 0 to 24, inches. Null except on the latest date."
+        },
+        {
+          "name": "forecast_snow_day_2_in",
+          "type": "DOUBLE",
+          "description": "Forecast snowfall for hours 24 to 48, inches. Null except on the latest date."
+        },
+        {
+          "name": "forecast_snow_day_3_in",
+          "type": "DOUBLE",
+          "description": "Forecast snowfall for hours 48 to 72, inches. Null except on the latest date."
+        },
+        {
+          "name": "forecast_precip_72h_in",
+          "type": "DOUBLE",
+          "description": "Forecast liquid precipitation for the next 72 hours, inches. Null except on the latest date."
+        },
+        {
+          "name": "forecast_temp_min_72h_f",
+          "type": "DOUBLE",
+          "description": "Lowest forecast air temperature over the next 72 hours, degrees F. Null except on the latest date."
+        },
+        {
+          "name": "has_missing_reading",
+          "type": "BOOLEAN",
+          "description": "True when a station reading was missing that day and the last value was carried forward."
+        }
+      ]
+    },
+    {
+      "name": "powder_score",
+      "description": "The powder score, 0 to 100, one row per resort per day, with its six components. score = 100 x sum(weight x component) / sum(weights of known components). Each component is a 0-to-1 ramp between two anchors; weights and anchors live in the powder_score_weights seed. The *_points columns add up to powder_score exactly. The forecast component is null on replayed days, where the other weights are rescaled.",
+      "columns": [
+        {
+          "name": "resort_id",
+          "type": "VARCHAR",
+          "description": "Resort slug. Joins to resorts.resort_id and resort_daily.resort_id."
+        },
+        {
+          "name": "resort_name",
+          "type": "VARCHAR",
+          "description": "Display name of the resort."
+        },
+        {
+          "name": "date",
+          "type": "DATE",
+          "description": "Report date (DATE). Joins to resort_daily.date."
+        },
+        {
+          "name": "powder_score",
+          "type": "DOUBLE",
+          "description": "Powder score from 0 (nothing to ski) to 100 (deep, light, cold, and more coming)."
+        },
+        {
+          "name": "tier",
+          "type": "VARCHAR",
+          "description": "Label for the score: 'epic' (75+), 'powder' (55+), 'soft' (35+), 'firm' (15+), 'off' (below 15)."
+        },
+        {
+          "name": "rank",
+          "type": "INTEGER",
+          "description": "Rank among all resorts on that date, 1 = best. Ties break on 72-hour snow, then depth, then name."
+        },
+        {
+          "name": "fresh_24h_score",
+          "type": "DOUBLE",
+          "description": "New snow in the last 24 hours as a 0-to-1 score (1 at 12 inches or more)."
+        },
+        {
+          "name": "fresh_72h_score",
+          "type": "DOUBLE",
+          "description": "New snow in the last 72 hours as a 0-to-1 score (1 at 24 inches or more)."
+        },
+        {
+          "name": "density_score",
+          "type": "DOUBLE",
+          "description": "Lightness of the storm snow as a 0-to-1 score (1 at 8% water or less, 0 at 18% or more), scaled down when under 6 inches fell in 72 hours."
+        },
+        {
+          "name": "cold_score",
+          "type": "DOUBLE",
+          "description": "Cold preservation as a 0-to-1 score (1 at a 72-hour mean of 18 F or colder, 0 at 36 F or warmer, 0 on bare ground)."
+        },
+        {
+          "name": "base_score",
+          "type": "DOUBLE",
+          "description": "Snow depth as a 0-to-1 score (1 at 60 inches or more)."
+        },
+        {
+          "name": "forecast_score",
+          "type": "DOUBLE",
+          "description": "Forecast snowfall for the next 72 hours as a 0-to-1 score (1 at 12 inches or more). Null when there is no forecast for the date."
+        },
+        {
+          "name": "fresh_24h_points",
+          "type": "DOUBLE",
+          "description": "Points the 24-hour snow contributes to powder_score."
+        },
+        {
+          "name": "fresh_72h_points",
+          "type": "DOUBLE",
+          "description": "Points the 72-hour snow contributes to powder_score."
+        },
+        {
+          "name": "density_points",
+          "type": "DOUBLE",
+          "description": "Points snow density contributes to powder_score."
+        },
+        {
+          "name": "cold_points",
+          "type": "DOUBLE",
+          "description": "Points cold preservation contributes to powder_score."
+        },
+        {
+          "name": "base_points",
+          "type": "DOUBLE",
+          "description": "Points base depth contributes to powder_score."
+        },
+        {
+          "name": "forecast_points",
+          "type": "DOUBLE",
+          "description": "Points the forecast contributes to powder_score. Null when there is no forecast for the date."
+        },
+        {
+          "name": "weight_known",
+          "type": "DOUBLE",
+          "description": "Sum of the weights of the components that were known that day (1.0 with a forecast, 0.9 without)."
+        }
+      ]
+    }
+  ],
+  "resorts": [
+    {
+      "id": "alta",
+      "name": "Alta"
+    },
+    {
+      "id": "beaver-mountain",
+      "name": "Beaver Mountain"
+    },
+    {
+      "id": "brian-head",
+      "name": "Brian Head"
+    },
+    {
+      "id": "brighton",
+      "name": "Brighton"
+    },
+    {
+      "id": "deer-valley",
+      "name": "Deer Valley"
+    },
+    {
+      "id": "eagle-point",
+      "name": "Eagle Point"
+    },
+    {
+      "id": "park-city",
+      "name": "Park City Mountain"
+    },
+    {
+      "id": "powder-mountain",
+      "name": "Powder Mountain"
+    },
+    {
+      "id": "snowbasin",
+      "name": "Snowbasin"
+    },
+    {
+      "id": "snowbird",
+      "name": "Snowbird"
+    },
+    {
+      "id": "solitude",
+      "name": "Solitude"
+    },
+    {
+      "id": "sundance",
+      "name": "Sundance"
+    }
+  ],
+  "firstDate": "2025-09-08"
+}

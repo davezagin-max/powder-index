@@ -1,0 +1,14 @@
+station_triplet,station_name,latitude,longitude,elevation_ft,county
+1115:UT:SNTL,Klondike Narrows,41.96769,-111.59713,7280.0,Cache
+1154:UT:SNTL,Brian Head,37.67994,-112.85674,10040.0,Iron
+1300:UT:SNTL,Powder Mountain,41.37428,-111.76673,8490.0,Cache
+1308:UT:SNTL,Atwater,40.59124,-111.63775,8750.0,Salt Lake
+332:UT:SNTL,Ben Lomond Peak,41.37603,-111.94405,7690.0,Weber
+339:UT:SNTL,Big Flat,38.30183,-112.35672,10320.0,Beaver
+366:UT:SNTL,Brighton,40.59936,-111.58167,8790.0,Salt Lake
+474:UT:SNTL,Farmington,40.97462,-111.80975,7920.0,Davis
+628:UT:SNTL,Mill-D North,40.65883,-111.63683,8940.0,Salt Lake
+766:UT:SNTL,Snowbird,40.56914,-111.65852,9170.0,Salt Lake
+814:UT:SNTL,Thaynes Canyon,40.6235,-111.53322,9260.0,Summit
+820:UT:SNTL,Timpanogos Divide,40.42817,-111.61633,8180.0,Utah
+856:UT:SNTL,Parleys Upper,40.70194,-111.60619,8330.0,Salt Lake

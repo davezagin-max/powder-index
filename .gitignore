@@ -52,3 +52,17 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+
+# pipeline artifacts (the committed snapshot lives in pipeline/data/snapshot)
+pipeline/data/raw/
+pipeline/data/*.duckdb
+pipeline/data/*.duckdb.wal
+pipeline/dbt/target/
+pipeline/dbt/logs/
+pipeline/dbt/dbt_packages/
+pipeline/dbt/.user.yml
+pipeline/logs/
+site/
+
+# DuckDB-WASM engine files, copied from node_modules by scripts/copy-duckdb.mjs
+public/duckdb/

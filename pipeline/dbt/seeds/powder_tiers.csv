@@ -1,0 +1,6 @@
+tier,min_score,sort_order,label
+epic,75,1,Epic
+powder,55,2,Powder day
+soft,35,3,Soft turns
+firm,15,4,Firm
+off,0,5,Off

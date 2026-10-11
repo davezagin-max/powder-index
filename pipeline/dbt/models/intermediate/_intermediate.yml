@@ -1,0 +1,132 @@
+version: 2
+
+models:
+  - name: int_resort_station_weights
+    description: >
+      Each resort's stations with their distance from the resort and an inverse-distance
+      weight. Weights sum to 1 per resort.
+    data_tests:
+      - unique_combination: {arguments: {columns: [resort_id, station_triplet]}}
+    columns:
+      - name: weight
+        data_tests:
+          - not_null
+          - accepted_range: {arguments: {min_value: 0, max_value: 1}}
+      - name: distance_km
+        description: Great-circle distance from the resort base to the station.
+
+  - name: int_station_days
+    description: >
+      A gap-free calendar per station. Missing depth or SWE readings are carried forward
+      for up to `max_gap_fill_days` days and flagged.
+    data_tests:
+      - unique_combination: {arguments: {columns: [station_triplet, obs_date]}}
+
+  - name: int_station_new_snow
+    description: >
+      New snow per station per day. The depth gain is the estimate; the SWE gain bounds it
+      from above (no powder day without water behind it) and, on cold days, from below
+      (snow that settling hid). See the model SQL for the full reasoning.
+    data_tests:
+      - unique_combination: {arguments: {columns: [station_triplet, obs_date]}}
+    columns:
+      - name: new_snow_in
+        description: Estimated settled new snow in the 24 hours before the reading, inches.
+        data_tests:
+          - not_null
+          - accepted_range: {arguments: {min_value: 0, max_value: 60}}
+      - name: new_snow_method
+        description: >
+          How the estimate was reached: `depth` (depth gain as measured), `raised_by_swe`
+          (lifted to the SWE floor), `capped_by_swe` (cut to the SWE cap), `depth_only`
+          (no SWE reading to bound it), or `none`.
+        data_tests:
+          - accepted_values:
+              arguments: {values: [none, depth, raised_by_swe, capped_by_swe, depth_only]}
+      - name: swe_cap_in
+        description: The most new snow the SWE gain allows, at the lightest plausible density.
+      - name: swe_floor_in
+        description: The least new snow a cold-day SWE gain implies, at the heaviest plausible density.
+      - name: new_snow_density
+        description: SWE gain divided by new snow, as a fraction. Null below one inch.
+
+  - name: int_resort_days
+    description: Station days blended to resort days, with 72-hour and 7-day rolling windows.
+    data_tests:
+      - unique_combination: {arguments: {columns: [resort_id, date]}}
+
+  - name: int_resort_forecast
+    description: >
+      One row per resort: NWS forecast totals for the 72 hours after the forecast was
+      fetched, with each forecast period prorated into the window.
+    columns:
+      - name: resort_id
+        data_tests: [unique, not_null]
+      - name: forecast_snow_72h_in
+        data_tests:
+          - not_null
+          - accepted_range: {arguments: {min_value: 0, max_value: 120}}
+
+unit_tests:
+  - name: gaps_are_carried_forward_then_given_up_on
+    description: A missing reading keeps the last value for three days, then becomes null.
+    model: int_station_days
+    given:
+      - input: ref('stg_snotel__daily')
+        rows:
+          - {station_triplet: A, obs_date: 2026-01-01, snow_depth_in: 40, swe_in: 10.0, temp_avg_f: 20}
+          - {station_triplet: A, obs_date: 2026-01-02, snow_depth_in: null, swe_in: 10.2, temp_avg_f: 25}
+          - {station_triplet: A, obs_date: 2026-01-07, snow_depth_in: 44, swe_in: 10.6, temp_avg_f: 30}
+    expect:
+      rows:
+        - {station_triplet: A, obs_date: 2026-01-01, snow_depth_in: 40, swe_in: 10.0, depth_is_missing: false, temp_avg_24h_f: null}
+        - {station_triplet: A, obs_date: 2026-01-02, snow_depth_in: 40, swe_in: 10.2, depth_is_missing: true, temp_avg_24h_f: 20}
+        - {station_triplet: A, obs_date: 2026-01-03, snow_depth_in: 40, swe_in: 10.2, depth_is_missing: true, temp_avg_24h_f: 25}
+        - {station_triplet: A, obs_date: 2026-01-04, snow_depth_in: 40, swe_in: 10.2, depth_is_missing: true, temp_avg_24h_f: null}
+        - {station_triplet: A, obs_date: 2026-01-05, snow_depth_in: null, swe_in: 10.2, depth_is_missing: true, temp_avg_24h_f: null}
+        - {station_triplet: A, obs_date: 2026-01-06, snow_depth_in: null, swe_in: null, depth_is_missing: true, temp_avg_24h_f: null}
+        - {station_triplet: A, obs_date: 2026-01-07, snow_depth_in: 44, swe_in: 10.6, depth_is_missing: false, temp_avg_24h_f: null}
+
+  - name: new_snow_estimator_cases
+    description: >
+      One station per case, two days each: a clean storm, a depth spike with no water
+      behind it, snow hidden by settling, rain on snow, a one-inch flicker, a one-inch
+      rise backed by water, melt, and a missing pillow.
+    model: int_station_new_snow
+    given:
+      - input: ref('int_station_days')
+        rows:
+          - {station_triplet: clean_storm, obs_date: 2026-01-01, snow_depth_in: 40, swe_in: 10.0, temp_avg_24h_f: 20}
+          - {station_triplet: clean_storm, obs_date: 2026-01-02, snow_depth_in: 50, swe_in: 10.9, temp_avg_24h_f: 20}
+          - {station_triplet: depth_spike, obs_date: 2026-01-01, snow_depth_in: 40, swe_in: 10.0, temp_avg_24h_f: 20}
+          - {station_triplet: depth_spike, obs_date: 2026-01-02, snow_depth_in: 60, swe_in: 10.0, temp_avg_24h_f: 20}
+          - {station_triplet: hidden_by_settling, obs_date: 2026-01-01, snow_depth_in: 80, swe_in: 20.0, temp_avg_24h_f: 20}
+          - {station_triplet: hidden_by_settling, obs_date: 2026-01-02, snow_depth_in: 80, swe_in: 21.0, temp_avg_24h_f: 20}
+          - {station_triplet: rain_on_snow, obs_date: 2026-01-01, snow_depth_in: 80, swe_in: 20.0, temp_avg_24h_f: 38}
+          - {station_triplet: rain_on_snow, obs_date: 2026-01-02, snow_depth_in: 79, swe_in: 21.0, temp_avg_24h_f: 38}
+          - {station_triplet: one_inch_flicker, obs_date: 2026-01-01, snow_depth_in: 40, swe_in: 10.0, temp_avg_24h_f: 20}
+          - {station_triplet: one_inch_flicker, obs_date: 2026-01-02, snow_depth_in: 41, swe_in: 10.0, temp_avg_24h_f: 20}
+          - {station_triplet: one_inch_with_water, obs_date: 2026-01-01, snow_depth_in: 40, swe_in: 10.0, temp_avg_24h_f: 20}
+          - {station_triplet: one_inch_with_water, obs_date: 2026-01-02, snow_depth_in: 41, swe_in: 10.1, temp_avg_24h_f: 20}
+          - {station_triplet: melt, obs_date: 2026-01-01, snow_depth_in: 40, swe_in: 10.0, temp_avg_24h_f: 45}
+          - {station_triplet: melt, obs_date: 2026-01-02, snow_depth_in: 35, swe_in: 9.5, temp_avg_24h_f: 45}
+          - {station_triplet: missing_pillow, obs_date: 2026-01-01, snow_depth_in: 40, swe_in: null, temp_avg_24h_f: 20}
+          - {station_triplet: missing_pillow, obs_date: 2026-01-02, snow_depth_in: 46, swe_in: null, temp_avg_24h_f: 20}
+    expect:
+      rows:
+        - {station_triplet: clean_storm, obs_date: 2026-01-01, new_snow_in: 0, new_snow_method: none}
+        - {station_triplet: clean_storm, obs_date: 2026-01-02, new_snow_in: 10, new_snow_method: depth}
+        - {station_triplet: depth_spike, obs_date: 2026-01-01, new_snow_in: 0, new_snow_method: none}
+        - {station_triplet: depth_spike, obs_date: 2026-01-02, new_snow_in: 2.5, new_snow_method: capped_by_swe}
+        - {station_triplet: hidden_by_settling, obs_date: 2026-01-01, new_snow_in: 0, new_snow_method: none}
+        - {station_triplet: hidden_by_settling, obs_date: 2026-01-02, new_snow_in: 5, new_snow_method: raised_by_swe}
+        - {station_triplet: rain_on_snow, obs_date: 2026-01-01, new_snow_in: 0, new_snow_method: none}
+        - {station_triplet: rain_on_snow, obs_date: 2026-01-02, new_snow_in: 0, new_snow_method: none}
+        - {station_triplet: one_inch_flicker, obs_date: 2026-01-01, new_snow_in: 0, new_snow_method: none}
+        - {station_triplet: one_inch_flicker, obs_date: 2026-01-02, new_snow_in: 0, new_snow_method: none}
+        - {station_triplet: one_inch_with_water, obs_date: 2026-01-01, new_snow_in: 0, new_snow_method: none}
+        - {station_triplet: one_inch_with_water, obs_date: 2026-01-02, new_snow_in: 1, new_snow_method: depth}
+        - {station_triplet: melt, obs_date: 2026-01-01, new_snow_in: 0, new_snow_method: none}
+        - {station_triplet: melt, obs_date: 2026-01-02, new_snow_in: 0, new_snow_method: none}
+        - {station_triplet: missing_pillow, obs_date: 2026-01-01, new_snow_in: 0, new_snow_method: none}
+        - {station_triplet: missing_pillow, obs_date: 2026-01-02, new_snow_in: 6, new_snow_method: depth_only}

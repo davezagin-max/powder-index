@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: stg_snotel__daily
+    description: >
+      SNOTEL daily readings, typed and renamed, one row per station and date. Readings
+      outside physical bounds are nulled here.
+    data_tests:
+      - unique_combination: {arguments: {columns: [station_triplet, obs_date]}}
+    columns:
+      - name: station_triplet
+        data_tests: [not_null]
+      - name: obs_date
+        description: The reading is the 00:00 observation on this date (local standard time).
+        data_tests: [not_null]
+      - name: snow_depth_in
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0, max_value: 400}}
+      - name: swe_in
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0, max_value: 150}}
+
+  - name: stg_snotel__stations
+    description: SNOTEL station metadata.
+    columns:
+      - name: station_triplet
+        data_tests: [unique, not_null]
+
+  - name: stg_nws__forecast
+    description: >
+      NWS gridpoint forecast periods in inches and degrees F, one row per resort, element
+      (snowfall, precipitation, temperature), and period.
+    columns:
+      - name: resort_id
+        data_tests:
+          - not_null
+          - relationships: {arguments: {to: ref('resort_list'), field: resort_id}}
+      - name: element
+        data_tests:
+          - accepted_values: {arguments: {values: [snowfall, precipitation, temperature]}}
+      - name: duration_hours
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0.25, max_value: 240}}

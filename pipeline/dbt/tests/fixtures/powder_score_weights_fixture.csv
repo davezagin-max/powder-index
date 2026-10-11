@@ -1,0 +1,7 @@
+component,weight,input_column,zero_at,full_at,unit,label,description
+fresh_24h,0.35,new_snow_24h_in,0,12,in,New snow (24 h),Settled new snow in the 24 hours before the midnight reading. Full marks at a foot.
+fresh_72h,0.20,new_snow_72h_in,0,24,in,Storm total (72 h),New snow over the last three days. Leftovers still ski well; full marks at two feet.
+density,0.15,density_72h_pct,18,8,%,Snow density,Water content of the 72-hour storm snow. Lighter is better: full marks at 8% or less and none at 18% or more. Scaled down when the storm total is under 6 inches.
+cold,0.10,temp_avg_72h_f,36,18,°F,Cold preservation,Mean air temperature over the last three days. Cold keeps snow soft: full marks at 18°F or colder and none at 36°F or warmer.
+base,0.10,snow_depth_in,0,60,in,Base depth,Snow on the ground at the station. Full marks at five feet.
+forecast,0.10,forecast_snow_72h_in,0,12,in,Forecast (72 h),National Weather Service snowfall forecast for the next 72 hours. Only known for the day the pipeline ran.

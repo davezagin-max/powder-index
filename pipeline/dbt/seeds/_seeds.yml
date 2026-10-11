@@ -1,0 +1,57 @@
+version: 2
+
+seeds:
+  - name: resort_list
+    description: >
+      The resorts on the index. Coordinates mark the base area; elevations are the
+      published base and summit. Edit this file to add a resort.
+    columns:
+      - name: resort_id
+        description: Stable slug used as the key everywhere.
+        data_tests: [unique, not_null]
+      - name: latitude
+        data_tests:
+          - accepted_range: {arguments: {min_value: 36.9, max_value: 42.1}}
+      - name: longitude
+        data_tests:
+          - accepted_range: {arguments: {min_value: -114.1, max_value: -109.0}}
+
+  - name: resort_stations
+    description: >
+      Which SNOTEL stations stand in for each resort, and why. Curated by drainage and
+      elevation rather than by distance alone: the nearest station is sometimes over a
+      ridge in a different snow climate. A station is a proxy, not the resort's own stake.
+    data_tests:
+      - unique_combination: {arguments: {columns: [resort_id, station_triplet]}}
+    columns:
+      - name: resort_id
+        data_tests:
+          - not_null
+          - relationships: {arguments: {to: ref('resort_list'), field: resort_id}}
+      - name: station_triplet
+        description: "AWDB station id: number, state, network."
+        data_tests: [not_null]
+
+  - name: powder_score_weights
+    description: >
+      The powder score formula. One row per component: its weight, the column it reads,
+      and the two anchors of its linear 0-to-1 ramp (`zero_at` scores 0, `full_at` scores 1;
+      when `zero_at` is the larger number, lower is better). Weights sum to 1.
+    columns:
+      - name: component
+        data_tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments: {values: [fresh_24h, fresh_72h, density, cold, base, forecast]}
+      - name: weight
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0, max_value: 1}}
+
+  - name: powder_tiers
+    description: Score thresholds for the tier labels. A score takes the highest tier it clears.
+    columns:
+      - name: tier
+        data_tests: [unique, not_null]
+      - name: min_score
+        data_tests: [unique, not_null]

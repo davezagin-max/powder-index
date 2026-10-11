@@ -1,0 +1,16 @@
+resort_id,station_triplet,rationale
+alta,1308:UT:SNTL,Atwater study plot at the Alta base
+snowbird,766:UT:SNTL,Station sits inside the resort in Gad Valley
+brighton,366:UT:SNTL,Station sits at the Brighton base
+solitude,366:UT:SNTL,Up-canyon neighbor in Big Cottonwood
+solitude,628:UT:SNTL,Down-canyon neighbor in Big Cottonwood
+park-city,814:UT:SNTL,Thaynes Canyon is inside the resort boundary
+deer-valley,814:UT:SNTL,Nearest high station on the Park City ridgeline
+deer-valley,856:UT:SNTL,Nearest Wasatch Back station to the north
+snowbasin,332:UT:SNTL,Nearest Wasatch crest station to the north; no station on the mountain
+snowbasin,474:UT:SNTL,Nearest Wasatch crest station to the south; no station on the mountain
+powder-mountain,1300:UT:SNTL,Station sits on the mountain
+sundance,820:UT:SNTL,Timpanogos Divide is the nearest station at summit elevation
+beaver-mountain,1115:UT:SNTL,Nearest station in Logan Canyon at base elevation
+eagle-point,339:UT:SNTL,Big Flat is the nearest station above the resort
+brian-head,1154:UT:SNTL,Station sits beside the resort

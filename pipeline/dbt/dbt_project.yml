@@ -1,0 +1,61 @@
+name: powder_index
+version: "1.0.0"
+config-version: 2
+profile: powder_index
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+# Constants of the new-snow estimator and the score gates. Weights and normalization
+# anchors live in seeds/powder_score_weights.csv; tiers in seeds/powder_tiers.csv.
+vars:
+  # A reading outside these bounds is treated as missing.
+  max_plausible_depth_in: 400
+  max_plausible_swe_in: 150
+  # A missing reading is carried forward for at most this many days.
+  max_gap_fill_days: 3
+  # Snow pillows report SWE in steps of 0.1 in.
+  swe_resolution_in: 0.1
+  # Lightest and heaviest new snow we accept (SWE / depth). They turn a SWE gain into
+  # an upper and a lower bound on the new-snow depth, and water beyond the heaviest
+  # density is counted as rain rather than as snow.
+  min_new_snow_density: 0.04
+  max_new_snow_density: 0.20
+  # A SWE gain with no depth gain only counts as snow when the day averaged this cold.
+  snow_phase_max_temp_f: 34
+  # Depth sensors report whole inches and flicker by one. A 1 in rise needs a SWE gain
+  # to back it; without one the rise must reach this to count.
+  depth_noise_floor_in: 2
+  # A SWE gain with no depth gain must reach this to count (pillows flicker by 0.1 in).
+  swe_only_min_gain_in: 0.2
+  # Lightness earns full credit once the 72 h storm total reaches this, and
+  # proportionally less below it: two inches of smoke is not a powder day.
+  density_full_credit_storm_in: 6
+  # The marts start this many days after the first raw reading, so rolling windows are full.
+  warmup_days: 7
+
+seeds:
+  powder_index:
+    +schema: seeds
+    resort_list:
+      +column_types: {latitude: double, longitude: double, base_elev_ft: integer, summit_elev_ft: integer}
+    powder_score_weights:
+      +column_types: {weight: double, zero_at: double, full_at: double}
+    powder_tiers:
+      +column_types: {min_score: double, sort_order: integer}
+
+models:
+  powder_index:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts

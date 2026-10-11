@@ -1,0 +1,47 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: >
+      Tables written by the ingest step (`python -m powder ingest`). Each is replaced on
+      every run. `_loaded_at` is when the rows were fetched from the public API, not when
+      they were copied, so a run that fell back to the committed snapshot shows up as stale.
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after: {count: 36, period: hour}
+        error_after: {count: 96, period: hour}
+    tables:
+      - name: snotel_daily
+        description: >
+          NRCS SNOTEL daily values from the AWDB REST API, one row per station and date.
+          Requested with `periodRef=START`: snow depth and SWE dated D are the 00:00
+          reading on D. Daily temperature statistics describe calendar day D.
+        columns:
+          - name: station_triplet
+            description: "AWDB station id, for example 766:UT:SNTL."
+          - name: date
+            description: Local standard date of the reading.
+          - name: snwd_in
+            description: Snow depth in inches (element SNWD).
+          - name: wteq_in
+            description: Snow water equivalent in inches (element WTEQ).
+          - name: tobs_f
+            description: Air temperature at the midnight observation, degrees F (TOBS).
+          - name: tavg_f
+            description: Mean air temperature for the calendar day, degrees F (TAVG).
+          - name: tmin_f
+            description: Minimum air temperature for the calendar day, degrees F (TMIN).
+          - name: tmax_f
+            description: Maximum air temperature for the calendar day, degrees F (TMAX).
+      - name: snotel_stations
+        description: Station metadata from the AWDB REST API (name, coordinates, elevation).
+      - name: nws_forecast
+        description: >
+          National Weather Service gridpoint forecast periods from api.weather.gov for the
+          grid cell containing each resort. One row per resort, element, and period.
+        config:
+          freshness:
+            warn_after: {count: 24, period: hour}
+            error_after: {count: 72, period: hour}
