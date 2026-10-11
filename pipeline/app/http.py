@@ -161,7 +161,7 @@ def create_app(
     *,
     max_body_bytes: int = 64 * 1024,
     body_limits: dict[str, int] | None = None,
-    default_origins: tuple[str, ...] = ("http://localhost:3000",),
+    default_origins: tuple[str, ...] = ("http://localhost:3140",),
 ) -> FastAPI:
     """A FastAPI app with CORS for the frontend, a body size cap, and the kit's error envelope.
 

@@ -36,6 +36,8 @@ What that means exactly:
 | How one score adds up, and the season it sits in | A question, its chart, and the SQL that ran |
 | ![An answer with the two failed attempts that came before it, in dark mode](docs/ask-retry-trail.png) | ![The dbt lineage diagram and the safety notice, in dark mode](docs/lineage.png) |
 | The retry trail: one query blocked by the firewall, one rejected by DuckDB | Lineage drawn from dbt's manifest: 18 nodes, 86 tests |
+| ![The same morning in dark mode](docs/hero-dark.png) | ![The off-season state the page opens on in October](docs/off-season.png) |
+| Dark mode, with chart colors re-stepped for the dark surface | Off-season is a designed state: why every score is near zero, and one click to last winter |
 
 <p>
   <img src="docs/mobile.png" alt="Powder Index on a phone in dark mode: the date bar and the top-ranked resort" width="260" />
@@ -141,7 +143,7 @@ pnpm dev:api    # optional, in a second terminal: the Python function, for live 
 ## Tests & quality
 
 ```bash
-pnpm check                                   # lint, typecheck, 130 unit tests, production build
+pnpm check                                   # lint, typecheck, 131 unit tests, production build
 cd pipeline && uv run pytest -q              # 295 tests, including a full offline pipeline run
 ```
 

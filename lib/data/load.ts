@@ -33,8 +33,9 @@ export async function loadPublished(
   baseUrl: string = PUBLISHED_DATA_URL,
 ): Promise<Dashboard | null> {
   if (!baseUrl || baseUrl === "off") return null;
-  const timeout = AbortSignal.any([signal, AbortSignal.timeout(TIMEOUT_MS)]);
   try {
+    // Inside the try: a browser too old for AbortSignal.any must also mean "keep what you have".
+    const timeout = AbortSignal.any([signal, AbortSignal.timeout(TIMEOUT_MS)]);
     const manifest = ManifestSchema.safeParse(await getJson(`${baseUrl}/manifest.json`, fetcher, timeout));
     // ISO 8601 timestamps in UTC compare correctly as strings.
     if (!manifest.success || manifest.data.generatedAt <= bundledGeneratedAt) return null;

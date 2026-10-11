@@ -49,6 +49,23 @@ describe("loadPublished", () => {
     expect(await loadPublished(bundled.generatedAt, signal(), short, BASE)).toBeNull();
   });
 
+  it("keeps the bundled data in a browser too old to combine abort signals", async () => {
+    const fetch = fetcher({
+      [`${BASE}/manifest.json`]: { generatedAt: newer.generatedAt, asOf: newer.asOf },
+      [`${BASE}/dashboard.json`]: newer,
+    });
+    const any = vi.spyOn(AbortSignal, "any").mockImplementation(() => {
+      throw new TypeError("AbortSignal.any is not a function");
+    });
+    try {
+      // It must resolve to null, not reject: nothing awaits this promise with a catch.
+      await expect(loadPublished(bundled.generatedAt, signal(), fetch, BASE)).resolves.toBeNull();
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      any.mockRestore();
+    }
+  });
+
   it("does nothing when published data is switched off", async () => {
     const fetch = fetcher({});
     expect(await loadPublished(bundled.generatedAt, signal(), fetch, "off")).toBeNull();

@@ -111,20 +111,6 @@
       ]
     },
     {
-      "name": "how-it-works",
-      "path": "/?date=2026-02-19",
-      "theme": "light",
-      "viewport": "desktop",
-      "actions": [
-        {
-          "click": "header a[href='#how']"
-        },
-        {
-          "wait": 700
-        }
-      ]
-    },
-    {
       "name": "lineage",
       "path": "/?date=2026-02-19",
       "theme": "dark",
