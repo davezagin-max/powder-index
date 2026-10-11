@@ -15,7 +15,7 @@ export function ResultTable({ result, caption }: { result: QueryResult; caption:
   const rows = result.rows.slice(0, MAX_ROWS);
   return (
     <div className="flex flex-col gap-2">
-      <div className="max-h-96 overflow-auto rounded-md border border-border" tabIndex={0} role="region" aria-label={caption}>
+      <div className="max-h-[30rem] overflow-auto rounded-md border border-border" tabIndex={0} role="region" aria-label={caption}>
         <table className="w-full border-collapse text-sm">
           <caption className="sr-only">{caption}</caption>
           <thead className="sticky top-0 bg-surface-2 text-left text-xs text-muted">

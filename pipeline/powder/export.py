@@ -273,7 +273,12 @@ def build_schema(db: duckdb.DuckDBPyConnection, manifest: dict[str, Any]) -> dic
 
 
 def build_lineage(manifest: dict[str, Any]) -> dict[str, Any]:
-    """The dbt DAG, reduced to what a diagram needs."""
+    """The dbt DAG, reduced to what a diagram needs.
+
+    A node's `tests` is how many tests touch it, so a relationships test counts on both
+    of its tables and the per-node numbers add up to more than the project has.
+    `testCount` is the honest total: every data test and unit test, once each.
+    """
     kept: dict[str, dict[str, Any]] = {}
     for unique_id, node in {**manifest["sources"], **manifest["nodes"]}.items():
         kind = node["resource_type"]
@@ -282,20 +287,24 @@ def build_lineage(manifest: dict[str, Any]) -> dict[str, Any]:
         layer = kind if kind != "model" else node["fqn"][1]  # staging / intermediate / marts
         kept[unique_id] = {"id": unique_id, "name": node["name"], "layer": layer, "tests": 0}
     edges: set[tuple[str, str]] = set()
+    test_count = 0
     for unique_id, node in manifest["nodes"].items():
         parents = [p for p in node.get("depends_on", {}).get("nodes", []) if p in kept]
         if node["resource_type"] == "model":
             edges.update((parent, unique_id) for parent in parents)
         elif node["resource_type"] == "test":
+            test_count += 1
             for parent in parents:
                 kept[parent]["tests"] += 1
     for unit_test in manifest.get("unit_tests", {}).values():
+        test_count += 1
         for parent in unit_test.get("depends_on", {}).get("nodes", []):
             if parent in kept and kept[parent]["name"] == unit_test.get("model"):
                 kept[parent]["tests"] += 1
     return {
         "nodes": sorted(kept.values(), key=lambda n: (n["layer"], n["name"])),
         "edges": [{"from": a, "to": b} for a, b in sorted(edges)],
+        "testCount": test_count,
     }
 
 

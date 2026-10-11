@@ -50,7 +50,7 @@ export function RankingCard({
       aria-label={`Rank ${day.rank}: ${resort.name}, powder score ${day.score}, ${day.tier.label}. ${
         breakdown ? `Points: ${breakdown}. ` : ""
       }${inches(day.new24)} inches in 24 hours, base ${inches(day.depth)} inches. Show history.`}
-      className={`flex w-full flex-col gap-3 rounded-lg border bg-surface p-4 text-left transition-colors ${
+      className={`flex h-full w-full flex-col justify-between gap-3 rounded-lg border bg-surface p-4 text-left transition-colors ${
         selected ? "border-accent ring-1 ring-accent" : "border-border hover:border-accent"
       }`}
     >
@@ -59,8 +59,8 @@ export function RankingCard({
           <span className="tabular mt-0.5 w-5 shrink-0 text-right text-sm font-medium text-muted">{day.rank}</span>
           <div className="min-w-0">
             <h3 className="truncate text-base font-semibold leading-tight">{resort.name}</h3>
-            <p className="truncate text-xs text-muted">
-              {resort.area} · {PROXY_NOTE[resort.proxy]}
+            <p className="text-xs leading-snug text-muted">
+              {resort.area} · <span className="whitespace-nowrap">{PROXY_NOTE[resort.proxy]}</span>
             </p>
           </div>
         </div>

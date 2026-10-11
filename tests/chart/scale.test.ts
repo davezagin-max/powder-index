@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { areaPath, extent, formatNumber, linePath, linear, niceTicks } from "@/lib/chart/scale";
+import { areaPath, extent, fitBandLabels, formatNumber, linePath, linear, niceTicks } from "@/lib/chart/scale";
 
 describe("linear", () => {
   it("maps a domain onto a range, including an inverted one", () => {
@@ -74,5 +74,38 @@ describe("extent and formatNumber", () => {
       "244",
       "7",
     ]);
+  });
+});
+
+describe("fitBandLabels", () => {
+  const months = ["Nov 2025", "Dec 2025", "Jan 2026", "Feb 2026", "Mar 2026", "Apr 2026"];
+
+  it("prints every label when the longest one fits its band", () => {
+    expect(fitBandLabels(months, 190)).toEqual(months);
+    expect(fitBandLabels(["Alta", "Snowbird"], 60)).toEqual(["Alta", "Snowbird"]);
+  });
+
+  it("falls back to the first word on a phone-width chart, where full labels would collide", () => {
+    // 390px phone: (322 - 48) / 6 bands is about 46px, and "Nov 2025" needs about 58.
+    expect(fitBandLabels(months, 46)).toEqual(["Nov", "Dec", "Jan", "Feb", "Mar", "Apr"]);
+  });
+
+  it("thins the labels out when shortening would make two bands read the same", () => {
+    const twoWinters = ["Jan 2025", "Feb 2025", "Jan 2026", "Feb 2026"];
+    expect(fitBandLabels(twoWinters, 40)).toEqual(["Jan 2025", null, "Jan 2026", null]);
+  });
+
+  it("spaces what it keeps so neighbors cannot touch", () => {
+    const names = ["Park City Mountain", "Powder Mountain", "Beaver Mountain", "Brian Head", "Deer Valley", "Eagle Point"];
+    const fitted = fitBandLabels(names, 30);
+    const kept = fitted.flatMap((label, index) => (label === null ? [] : [index]));
+    expect(kept[0]).toBe(0);
+    // The longest label is 18 characters, about 120px: one label per four 30px bands at most.
+    for (let i = 1; i < kept.length; i++) expect(kept[i] - kept[i - 1]).toBeGreaterThanOrEqual(4);
+    expect(fitted.filter((label) => label !== null).every((label) => names.includes(label!))).toBe(true);
+  });
+
+  it("returns nothing for nothing", () => {
+    expect(fitBandLabels([], 100)).toEqual([]);
   });
 });

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useWidth } from "@/components/chart/useWidth";
 import type { ChartModel, Series } from "@/lib/chart/model";
-import { extent, formatNumber, linePath, linear, niceTicks } from "@/lib/chart/scale";
+import { extent, fitBandLabels, formatNumber, linePath, linear, niceTicks } from "@/lib/chart/scale";
 import { formatDate, toIso } from "@/lib/data/dates";
 import { OTHER_COLOR, SERIES_COLORS } from "@/lib/ui/colors";
 
@@ -108,6 +108,8 @@ function GroupedBars({ model, width }: { model: BarModel; width: number }) {
   const gap = 2;
   const bar = Math.min(24, Math.max(3, (band * 0.8 - gap * (model.series.length - 1)) / model.series.length));
   const group = bar * model.series.length + gap * (model.series.length - 1);
+  // On a phone six month names do not fit side by side; shorten or thin them out.
+  const labels = fitBandLabels(model.categories, band);
   return (
     <>
       <Legend series={model.series} mark="box" />
@@ -142,9 +144,11 @@ function GroupedBars({ model, width }: { model: BarModel; width: number }) {
                   </path>
                 );
               })}
-              <text x={margin.left + band * c + band / 2} y={height - 8} textAnchor="middle" className="chart-text">
-                {band < 44 ? category.slice(0, 3) : category}
-              </text>
+              {labels[c] !== null && (
+                <text x={margin.left + band * c + band / 2} y={height - 8} textAnchor="middle" className="chart-text">
+                  {labels[c]}
+                </text>
+              )}
             </g>
           );
         })}

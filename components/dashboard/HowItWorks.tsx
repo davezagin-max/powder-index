@@ -23,7 +23,6 @@ function Lineage() {
   const columns = LAYOUT.columns.length;
   const width = columns * NODE.width + (columns - 1) * NODE.gapX;
   const height = LAYOUT.rowCount * (NODE.height + NODE.gapY) - NODE.gapY;
-  const tests = lineage.nodes.reduce((sum, node) => sum + node.tests, 0);
   return (
     <figure className="flex min-w-0 flex-col gap-2">
       <figcaption className="font-semibold">Lineage: from two public APIs to one score</figcaption>
@@ -54,8 +53,9 @@ function Lineage() {
         </svg>
       </div>
       <p className="text-xs text-muted">
-        The dbt project as it was last built: {lineage.nodes.length} nodes and {tests} tests. Seeds sit beside the
-        first model that reads them. Full documentation, with a description of every column, is{" "}
+        The dbt project as it was last built: {lineage.nodes.length} nodes and {lineage.testCount} tests. A box
+        counts every test that touches it, so a test spanning two tables shows on both. Full documentation, with a
+        description of every column, is{" "}
         <a href={DOCS_URL} className="underline underline-offset-2">
           published with each pipeline run
         </a>
@@ -87,24 +87,26 @@ export function HowItWorks({ data }: { data: Dashboard }) {
         </p>
       </div>
 
+      {/* On a phone the "Why" column would push the table off screen, so each reason moves
+          under its component name and the table keeps to four narrow columns. */}
       <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-        <table className="w-full min-w-[40rem] text-sm">
+        <table className="w-full text-sm">
           <caption className="sr-only">Powder score components, weights, and scoring anchors</caption>
           <thead className="bg-surface-2 text-left text-xs text-muted">
             <tr>
-              <th scope="col" className="px-4 py-2 font-medium">
+              <th scope="col" className="px-3 py-2 font-medium sm:px-4">
                 Component
               </th>
-              <th scope="col" className="px-4 py-2 text-right font-medium">
+              <th scope="col" className="px-2 py-2 text-right font-medium sm:px-4">
                 Weight
               </th>
-              <th scope="col" className="px-4 py-2 font-medium">
+              <th scope="col" className="px-2 py-2 font-medium sm:px-4">
                 Scores 0 at
               </th>
-              <th scope="col" className="px-4 py-2 font-medium">
+              <th scope="col" className="px-2 py-2 font-medium sm:px-4">
                 Scores 1 at
               </th>
-              <th scope="col" className="px-4 py-2 font-medium">
+              <th scope="col" className="hidden px-4 py-2 font-medium sm:table-cell">
                 Why
               </th>
             </tr>
@@ -112,16 +114,19 @@ export function HowItWorks({ data }: { data: Dashboard }) {
           <tbody>
             {data.components.map((component) => (
               <tr key={component.key} className="border-t border-border align-top">
-                <th scope="row" className="whitespace-nowrap px-4 py-2.5 text-left font-medium">
+                <th scope="row" className="px-3 py-2.5 text-left font-medium sm:whitespace-nowrap sm:px-4">
                   <span className="flex items-center gap-2">
-                    <span aria-hidden className="size-2.5 rounded-[2px]" style={{ background: COMPONENT_COLOR[component.key] }} />
+                    <span aria-hidden className="size-2.5 shrink-0 rounded-[2px]" style={{ background: COMPONENT_COLOR[component.key] }} />
                     {component.label}
                   </span>
+                  <span className="mt-1 block text-xs font-normal leading-relaxed text-muted sm:hidden">
+                    {component.description}
+                  </span>
                 </th>
-                <td className="tabular px-4 py-2.5 text-right">{Math.round(component.weight * 100)}%</td>
-                <td className="tabular whitespace-nowrap px-4 py-2.5">{anchor(component.zeroAt, component.unit)}</td>
-                <td className="tabular whitespace-nowrap px-4 py-2.5">{anchor(component.fullAt, component.unit)}</td>
-                <td className="px-4 py-2.5 text-muted">{component.description}</td>
+                <td className="tabular px-2 py-2.5 text-right sm:px-4">{Math.round(component.weight * 100)}%</td>
+                <td className="tabular whitespace-nowrap px-2 py-2.5 sm:px-4">{anchor(component.zeroAt, component.unit)}</td>
+                <td className="tabular whitespace-nowrap px-2 py-2.5 sm:px-4">{anchor(component.fullAt, component.unit)}</td>
+                <td className="hidden px-4 py-2.5 text-muted sm:table-cell">{component.description}</td>
               </tr>
             ))}
           </tbody>

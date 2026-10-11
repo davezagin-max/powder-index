@@ -169,3 +169,18 @@ def test_lineage_runs_from_sources_to_marts(built: Path) -> None:
     assert ("resort_daily", "powder_score") in edges
     assert ("powder_score_weights", "powder_score") in edges
     assert next(n for n in lineage["nodes"] if n["name"] == "powder_score")["tests"] >= 10
+
+
+def test_lineage_counts_each_test_once(built: Path) -> None:
+    """A test that touches two tables shows on both boxes but is one test in the total."""
+    lineage = json.loads((built / "lineage.json").read_text())
+    manifest = json.loads((DBT_DIR / "target" / "manifest.json").read_text())
+    data_tests = sum(1 for node in manifest["nodes"].values() if node["resource_type"] == "test")
+    assert lineage["testCount"] == data_tests + len(manifest["unit_tests"])
+    assert lineage["testCount"] >= 80
+    # Summing the boxes double-counts relationships tests, so it must come out higher.
+    assert sum(node["tests"] for node in lineage["nodes"]) > lineage["testCount"]
+    # The diagram on the site is drawn from the committed copy; it must be this one.
+    assert json.loads((PUBLIC_DATA_DIR / "lineage.json").read_text()) == lineage, (
+        "run `uv run python -m powder run --offline`"
+    )

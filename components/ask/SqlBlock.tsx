@@ -20,7 +20,7 @@ export function SqlBlock({ sql, label }: { sql: string; label: string }) {
     <pre
       tabIndex={0}
       aria-label={label}
-      className="max-h-72 overflow-auto rounded-md border border-border bg-surface-2 p-3 font-mono text-[12.5px] leading-relaxed"
+      className="max-h-[30rem] overflow-auto rounded-md border border-border bg-surface-2 p-3 font-mono text-[12.5px] leading-relaxed"
     >
       <code>{parts}</code>
     </pre>

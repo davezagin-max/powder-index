@@ -13,6 +13,7 @@ import duckdb
 import pytest
 
 from app.ask import AskBody, AskData, check_chart
+from app.config import OPUS, PRICING
 from app.sqlguard import SqlRejected, validate_sql
 from powder.answers import UnfitAnswer, run_answer
 
@@ -37,12 +38,17 @@ def test_presets_and_fixtures_line_up_one_to_one() -> None:
 @pytest.mark.parametrize("key", sorted(STORE))
 def test_fixture_metadata_is_honest(key: str) -> None:
     fixture = STORE[key]
-    assert fixture["model"] == "claude-opus-5-5"
     if fixture["placeholder"]:
-        # A hand-written sample claims no recording time and no spend.
+        # A hand-written sample claims no recording time and no spend, and names the
+        # model the live path would call.
+        assert fixture["model"] == OPUS
         assert fixture["recordedAt"] is None
         assert fixture["costUsd"] == 0 and set(fixture["usage"].values()) == {0}
     else:
+        # A recording names whichever model really answered. That is Opus unless the
+        # server-side refusal fallback re-ran the request on another one, so it is only
+        # required to be a model this app can price.
+        assert fixture["model"] in PRICING
         assert fixture["recordedAt"]
         assert fixture["usage"]["output_tokens"] > 0 and fixture["costUsd"] > 0
 

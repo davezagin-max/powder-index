@@ -67,7 +67,7 @@ function Breakdown({ data, day }: { data: Dashboard; day: ResortDay }) {
                 </span>
               </th>
               <td className="py-2 pr-3 text-muted">{reading(component, day)}</td>
-              <td className="tabular py-2 text-right">
+              <td className="tabular whitespace-nowrap py-2 text-right">
                 {part.points === null ? (
                   <span className="text-muted">–</span>
                 ) : (
@@ -87,7 +87,7 @@ function Breakdown({ data, day }: { data: Dashboard; day: ResortDay }) {
             Powder score
           </th>
           <td />
-          <td className="tabular pt-2 text-right">
+          <td className="tabular whitespace-nowrap pt-2 text-right">
             <span className="font-semibold">{day.score.toFixed(1)}</span>
             <span className="text-muted"> / 100</span>
           </td>

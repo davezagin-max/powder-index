@@ -186,5 +186,6 @@
       "from": "source.powder_index.raw.snotel_stations",
       "to": "model.powder_index.stg_snotel__stations"
     }
-  ]
+  ],
+  "testCount": 86
 }

@@ -72,7 +72,7 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
         {summary.offSeason ? (
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border border-border bg-surface p-4">
             <div className="min-w-0 max-w-3xl">
-              <p className="font-semibold">Off-season: no snowpack at any station yet.</p>
+              <p className="font-semibold">Off-season: an inch of snow or less at every resort.</p>
               <p className="mt-0.5 text-sm text-muted">
                 {isLatest && summary.bestForecast
                   ? `The National Weather Service expects up to ${inches(summary.bestForecast.inches)} inches at ${summary.bestForecast.resort} over the next 72 hours, which is the only thing scoring points today. `

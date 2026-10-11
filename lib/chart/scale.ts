@@ -88,6 +88,28 @@ export function areaPath(points: { x: number; y: number | null }[], baseline: nu
   return path;
 }
 
+/**
+ * Category labels for a band axis, cut to what fits. Each band is `band` pixels wide and
+ * a label is about `charPx` per character, so the answer is arithmetic, not measurement:
+ *
+ *   1. every label in full, when the longest one fits its band;
+ *   2. else each label's first word ("Nov 2025" becomes "Nov"), when that fits and
+ *      still tells the bands apart;
+ *   3. else the full labels, but only every nth, spaced so neighbors cannot touch.
+ *
+ * A skipped label is null. The caller still draws every bar and keeps the full text in
+ * the tooltip and the table, so nothing is lost, only left unprinted.
+ */
+export function fitBandLabels(labels: string[], band: number, charPx = 6.2, gapPx = 8): (string | null)[] {
+  if (labels.length === 0) return [];
+  const widest = (texts: string[]) => Math.max(...texts.map((text) => text.length)) * charPx + gapPx;
+  if (widest(labels) <= band) return labels;
+  const short = labels.map((label) => label.trim().split(/\s+/)[0] ?? label);
+  if (new Set(short).size === labels.length && widest(short) <= band) return short;
+  const every = Math.max(2, Math.ceil(widest(labels) / Math.max(band, 1)));
+  return labels.map((label, index) => (index % every === 0 ? label : null));
+}
+
 /** Compact number for axes and tooltips: 1,284 · 12.5 · 0.07. */
 export function formatNumber(value: number): string {
   const abs = Math.abs(value);
