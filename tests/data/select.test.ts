@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import bundled from "@/public/data/dashboard.json";
 import { addDays, daysBetween, formatDate, isIsoDate, seasonLabel, waterYear } from "@/lib/data/dates";
 import {
+  bestDaysSeason,
   clampIndex,
   dayIndex,
   inches,
@@ -135,6 +136,15 @@ describe("helpers", () => {
     expect(found.map((season) => season.waterYear)).toEqual([2025, 2026, 2027]);
     expect(data.dates[found[1].start]).toBe("2025-10-01");
     expect(data.dates[found[1].end]).toBe("2026-09-30");
+  });
+
+  it("names the season of the best days only when they share one", () => {
+    expect(bestDaysSeason(data.bestDays)).toBe(2026);
+    const nextWinter = { ...data.bestDays[0], date: "2027-01-14" };
+    expect(bestDaysSeason([...data.bestDays, nextWinter])).toBeNull();
+    // 30 September and 1 October are different water years.
+    expect(bestDaysSeason([{ ...nextWinter, date: "2026-09-30" }, { ...nextWinter, date: "2026-10-01" }])).toBeNull();
+    expect(bestDaysSeason([])).toBeNull();
   });
 
   it("reports the tallest value across resorts", () => {

@@ -4,7 +4,7 @@
  * a score, so the page cannot disagree with the marts.
  */
 import { daysBetween, waterYear } from "./dates";
-import type { ComponentKey, Dashboard, Forecast, Resort, ScoreComponent, Tier } from "./types";
+import type { BestDay, ComponentKey, Dashboard, Forecast, Resort, ScoreComponent, Tier } from "./types";
 
 const POINT_SERIES = {
   fresh_24h: "pFresh24",
@@ -152,6 +152,16 @@ export function seasons(data: Dashboard): Season[] {
     else found.push({ waterYear: year, start: index, end: index });
   });
   return found;
+}
+
+/**
+ * The water year every best day falls in, or null when they span two winters (or there
+ * are none). By midwinter the data holds last season and this one, and "Feb 19" alone
+ * would then be ambiguous, so the caller needs to know which case it is in.
+ */
+export function bestDaysSeason(days: BestDay[]): number | null {
+  const years = new Set(days.map((day) => waterYear(day.date)));
+  return years.size === 1 ? [...years][0] : null;
 }
 
 /** The shared y-axis ceiling for a series across all resorts, so cards are comparable. */

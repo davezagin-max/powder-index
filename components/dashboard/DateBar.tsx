@@ -1,7 +1,7 @@
 "use client";
 
-import { formatDate, seasonLabel, waterYear } from "@/lib/data/dates";
-import { dayIndex } from "@/lib/data/select";
+import { formatDate, seasonLabel } from "@/lib/data/dates";
+import { bestDaysSeason, dayIndex } from "@/lib/data/select";
 import type { Dashboard } from "@/lib/data/types";
 
 function Chevron({ direction }: { direction: "left" | "right" }) {
@@ -38,7 +38,8 @@ export function DateBar({
   const last = data.dates.length - 1;
   const date = data.dates[index];
   const isLatest = index === last;
-  const season = data.bestDays[0] ? seasonLabel(waterYear(data.bestDays[0].date)) : null;
+  // One winter: name it once and keep the chips short. Two winters: each chip carries its year.
+  const season = bestDaysSeason(data.bestDays);
 
   return (
     <section aria-label="Report date" className="flex flex-col gap-3">
@@ -94,7 +95,7 @@ export function DateBar({
       {data.bestDays.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <p id="best-days-label" className="text-xs text-muted">
-            Jump to a powder day{season ? ` from winter ${season}` : ""}
+            Jump to a powder day{season ? ` from winter ${seasonLabel(season)}` : ""}
           </p>
           <ul aria-labelledby="best-days-label" className="flex flex-wrap gap-2">
             {data.bestDays.map((day) => {
@@ -112,7 +113,7 @@ export function DateBar({
                         : "border-border bg-surface hover:border-accent hover:bg-accent-soft"
                     }`}
                   >
-                    <span className="font-semibold">{formatDate(day.date, "short")}</span>
+                    <span className="font-semibold">{formatDate(day.date, season ? "short" : "medium")}</span>
                     <span className={`text-xs ${active ? "" : "text-muted"}`}>
                       {day.topResortName} {Math.round(day.topScore)}
                     </span>
