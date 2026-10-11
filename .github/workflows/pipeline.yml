@@ -1,0 +1,134 @@
+name: Pipeline
+
+# The daily run: ingest -> dbt build -> export -> publish to GitHub Pages.
+#
+# Nothing is committed to main. The Parquet and JSON the site reads, and the dbt docs,
+# are force-pushed as a single commit to the gh-pages branch, so the repository does not
+# grow by a data commit a day. The site reads
+#   https://davezagin-max.github.io/powder-index/data/
+# and falls back to the snapshot bundled in public/data/ when that is missing or older.
+#
+# One-time setup: Settings -> Pages -> "Deploy from a branch" -> gh-pages, / (root).
+
+on:
+  schedule:
+    # 13:20 UTC is 06:20 in Utah in winter. SNOTEL's midnight readings are posted by then.
+    - cron: "20 13 * * *"
+  workflow_dispatch:
+    inputs:
+      offline:
+        description: "Build from the committed snapshot instead of calling the APIs"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write # to push the gh-pages branch
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      OFFLINE: ${{ inputs.offline && 'true' || 'false' }}
+      DBT: --project-dir dbt --profiles-dir dbt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --no-dev
+
+      - name: Ingest SNOTEL and the NWS forecast
+        run: |
+          if [ "$OFFLINE" = "true" ]; then
+            uv run python -m powder ingest --offline
+          else
+            uv run python -m powder ingest
+          fi
+
+      # Each source falls back to the committed snapshot on its own when its API is down.
+      # A forecast fallback is harmless: a stale forecast is only ever attached to its own
+      # date, so today is scored on the other five components. A SNOTEL fallback is not:
+      # the snapshot is older than what yesterday's run published, so publishing it would
+      # move the site backwards. Stop here and leave yesterday's data in place.
+      - name: Refuse to publish a stale snowpack
+        run: |
+          snotel=$(jq -r .snotel.source data/raw/meta.json)
+          nws=$(jq -r .nws.source data/raw/meta.json)
+          echo "snotel: $snotel, nws: $nws"
+          if [ "$nws" != "live" ] && [ "$OFFLINE" != "true" ]; then
+            echo "::warning::The NWS pull failed ($(jq -r .nws.error data/raw/meta.json)). Publishing without a forecast."
+          fi
+          if [ "$snotel" != "live" ] && [ "$OFFLINE" != "true" ]; then
+            echo "::error::The SNOTEL pull failed ($(jq -r .snotel.error data/raw/meta.json)). Not publishing: the data already on Pages is newer than the snapshot."
+            exit 1
+          fi
+
+      - name: Source freshness, SNOTEL (blocks the run)
+        if: env.OFFLINE != 'true'
+        run: uv run dbt source freshness $DBT --select source:raw.snotel_daily source:raw.snotel_stations
+
+      - name: Source freshness, NWS (reported, does not block)
+        if: env.OFFLINE != 'true'
+        continue-on-error: true
+        run: uv run dbt source freshness $DBT --select source:raw.nws_forecast
+
+      - name: dbt build (seeds, models, data tests, unit tests)
+        run: uv run python -m powder build
+
+      - name: Export Parquet and JSON
+        run: uv run python -m powder export --out ../site/data
+
+      - name: Generate dbt docs
+        run: |
+          uv run dbt docs generate $DBT
+          mkdir -p ../site/docs
+          cp dbt/target/index.html dbt/target/manifest.json dbt/target/catalog.json ../site/docs/
+
+      - name: Publish to the gh-pages branch
+        working-directory: site
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          as_of=$(jq -r .asOf data/manifest.json)
+          cat > index.html <<EOF
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>Powder Index: published data</title>
+          <h1>Powder Index: published data</h1>
+          <p>Readings through ${as_of}. Written by the daily pipeline run; read by the site.</p>
+          <ul>
+            <li><a href="docs/">dbt docs and lineage</a></li>
+            <li><a href="data/manifest.json">data/manifest.json</a></li>
+            <li><a href="data/dashboard.json">data/dashboard.json</a></li>
+            <li>data/resorts.parquet, data/resort_daily.parquet, data/powder_score.parquet</li>
+          </ul>
+          EOF
+          touch .nojekyll
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Pipeline run ${GITHUB_RUN_NUMBER}: readings through ${as_of}"
+          git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Pipeline run"
+            if [ -f data/raw/meta.json ]; then
+              echo "- SNOTEL: $(jq -r '.snotel.source + ", " + (.snotel.rows|tostring) + " rows"' data/raw/meta.json)"
+              echo "- NWS: $(jq -r '.nws.source + ", " + (.nws.rows|tostring) + " rows"' data/raw/meta.json)"
+            fi
+            if [ -f ../site/data/manifest.json ]; then
+              echo "- Published readings through $(jq -r .asOf ../site/data/manifest.json)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
