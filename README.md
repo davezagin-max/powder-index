@@ -11,7 +11,7 @@
 
 ## Try it in 10 seconds
 
-**[Open the live demo](https://powder-index.vercel.app)**: no key, no sign-up. It is October, so the page opens on an off-season morning. Click **Replay Feb 19: 33″ overnight** to jump to the best day of last winter, click a resort card to see how its score adds up, then scroll to **Ask the data** and pick a question. The SQL runs in your browser, in DuckDB-WASM, against the same Parquet files the pipeline publishes.
+**[Open the live demo](https://powder-index.vercel.app)**: no key, no sign-up. The page opens on the latest morning report, which in October is an off-season one. Click **Replay Feb 19: 33″ overnight** (or the **Feb 19** chip above it) to jump to the best day of last winter, click a resort card to see how its score adds up, then scroll to **Ask the data** and pick a question. The SQL runs in your browser, in DuckDB-WASM, against the same Parquet files the pipeline publishes.
 
 ![Replaying the best day of last winter, opening a resort, and asking the data a question](docs/demo.gif)
 
