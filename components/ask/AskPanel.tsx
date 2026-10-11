@@ -284,7 +284,7 @@ export function AskPanel({ dataUrl }: { dataUrl: string }) {
       </form>
       <p id="ask-hint" className="mt-1.5 text-xs text-muted">
         {isLive
-          ? "Each question costs about a cent on your key. The cost is shown under the answer."
+          ? "Expect a cent or two per question on your key. The exact cost is shown under the answer."
           : "The presets above run without a key. Their SQL is bundled with the page and executed live against the data."}
       </p>
 
