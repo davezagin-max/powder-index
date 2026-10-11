@@ -197,7 +197,10 @@ export function AskPanel({ dataUrl }: { dataUrl: string }) {
     setRun({ state: "done", question: text, outcome });
     // Bring the answer to the top of the screen: the chart is the point, and "nearest"
     // would leave only its title peeking in at the bottom.
-    resultRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    // A `behavior` passed from script overrides the stylesheet, so the reduced-motion
+    // preference has to be read here as well.
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    resultRef.current?.scrollIntoView({ block: "start", behavior: calm ? "auto" : "smooth" });
   }
 
   const busy = run.state === "busy";

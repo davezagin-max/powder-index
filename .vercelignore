@@ -6,3 +6,6 @@ pipeline/dbt
 pipeline/powder
 pipeline/scripts
 pipeline/tests
+
+# README images; the site does not serve them.
+docs
