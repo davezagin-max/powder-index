@@ -1,8 +1,11 @@
 {
+  "port": 3240,
   "shots": [
-    { "name": "hero", "path": "/", "theme": "light", "viewport": "desktop", "actions": [{ "click": "text=a powder day in the Wasatch" }, { "waitFor": "figure" }] },
-    { "name": "hero-dark", "path": "/", "theme": "dark", "viewport": "desktop", "actions": [{ "click": "text=a powder day in the Wasatch" }, { "waitFor": "figure" }] },
-    { "name": "mobile", "path": "/", "theme": "dark", "viewport": "mobile", "actions": [{ "click": "text=the first drop in a house set" }, { "waitFor": "figure" }] }
-  ],
-  "gif": { "path": "/", "theme": "dark", "actions": [{ "wait": 500 }, { "click": "text=a powder day in the Wasatch" }, { "waitFor": "figure" }, { "wait": 1200 }] }
+    { "name": "check-day", "path": "/?date=2026-02-19&resort=snowbird", "theme": "light", "viewport": "desktop", "fullPage": true, "actions": [{ "wait": 600 }] },
+    { "name": "check-day-dark", "path": "/?date=2026-02-19&resort=snowbird", "theme": "dark", "viewport": "desktop", "actions": [{ "wait": 600 }] },
+    { "name": "check-latest", "path": "/", "theme": "light", "viewport": "desktop", "actions": [{ "wait": 600 }] },
+    { "name": "check-mobile", "path": "/", "theme": "light", "viewport": "mobile", "actions": [{ "wait": 600 }] },
+    { "name": "check-mobile-day", "path": "/?date=2026-02-19", "theme": "dark", "viewport": "mobile", "fullPage": true, "actions": [{ "wait": 600 }] },
+    { "name": "check-ask", "path": "/?date=2026-02-19", "theme": "light", "viewport": "desktop", "fullPage": true, "actions": [{ "click": "text=What were the ten best powder days last season?" }, { "waitFor": "figure figcaption h3" }, { "wait": 500 }] }
+  ]
 }

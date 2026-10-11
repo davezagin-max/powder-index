@@ -2,14 +2,16 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { KeyProvider } from "@/components/kit/KeyProvider";
 import { THEME_INIT_SCRIPT } from "@/components/kit/ThemeToggle";
+import { TopoBackground } from "@/components/TopoBackground";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Starter",
-  description: "Portfolio project starter.",
+  title: "Powder Index: Utah snow, ranked every morning",
+  description:
+    "A daily powder ranking for twelve Utah ski resorts, built from public SNOTEL and National Weather Service data with dbt and DuckDB. Ask the data a question in plain English.",
 };
 
 export const viewport: Viewport = {
@@ -34,6 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to content
         </a>
+        <TopoBackground />
         <KeyProvider>{children}</KeyProvider>
       </body>
     </html>

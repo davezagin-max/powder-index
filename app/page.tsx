@@ -1,22 +1,24 @@
+import bundled from "@/public/data/dashboard.json";
+import { Dashboard } from "@/components/dashboard/Dashboard";
 import { DemoBanner } from "@/components/kit/DemoBanner";
-import { ThemeToggle } from "@/components/kit/ThemeToggle";
-import { ExampleDemo } from "./ExampleDemo";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
+import { ASK_HAS_PLACEHOLDERS } from "@/lib/ask/presets";
+import { DashboardSchema } from "@/lib/data/types";
 
-/** Starter page. Replace with the project's real UI; it shows the kit wired end to end. */
+// Validated once, at build time. A snapshot the page cannot read fails the build
+// instead of shipping.
+const initial = DashboardSchema.parse(bundled);
+
 export default function Home() {
   return (
     <>
-      <DemoBanner placeholder />
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h1 className="text-base font-semibold">Starter</h1>
-        <ThemeToggle />
-      </header>
-      <main id="main" className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-        <ExampleDemo />
+      <DemoBanner placeholder={ASK_HAS_PLACEHOLDERS} />
+      <SiteHeader />
+      <main id="main" className="flex-1">
+        <Dashboard initial={initial} />
       </main>
-      <footer className="border-t border-border px-4 py-4 text-center text-xs text-muted">
-        Built with Claude Code and Claude Opus 5.5.
-      </footer>
+      <SiteFooter />
     </>
   );
 }

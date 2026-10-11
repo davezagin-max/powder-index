@@ -20,7 +20,7 @@ export function DemoBanner({ placeholder = false, aiRequired = true }: DemoBanne
       <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-border bg-surface px-4 py-2 text-sm">
         <span className="inline-flex items-center gap-2">
           <span aria-hidden className="size-2 rounded-full bg-success" />
-          Live — calling Claude Opus 5.5 with your key.
+          Live. Your questions go to Claude Opus 5.5 with your key.
         </span>
         <button type="button" onClick={openKeyModal} className="underline underline-offset-2">
           Change key
@@ -29,18 +29,30 @@ export function DemoBanner({ placeholder = false, aiRequired = true }: DemoBanne
     );
   }
 
+  // The dashboard itself needs no key and shows real pipeline data either way. Only
+  // "Ask the data" changes: presets replay bundled answers, and the wording says which kind.
+  const short = placeholder
+    ? "Demo mode: real snow data, sample answers for the preset questions."
+    : "Demo mode: real snow data, recorded Claude answers for the preset questions.";
   const message = !aiRequired
     ? "Everything here works without a key. Add one to turn on the Claude Opus 5.5 features."
     : placeholder
-      ? "Demo mode — showing sample output until a real Claude Opus 5.5 run is recorded. Add your key to go live."
-      : "Demo mode — replaying a recorded Claude Opus 5.5 run. Add your key to go live.";
+      ? "Demo mode. The snow data is real; the preset questions show sample SQL until a real Claude Opus 5.5 run is recorded. Add your key to ask your own."
+      : "Demo mode. The snow data is real, and the preset questions replay recorded Claude Opus 5.5 answers. Add your key to ask your own.";
 
   return (
     <div
       role="status"
       className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-border bg-surface px-4 py-2 text-sm"
     >
-      <span>{message}</span>
+      {aiRequired ? (
+        <>
+          <span className="sm:hidden">{short}</span>
+          <span className="hidden sm:inline">{message}</span>
+        </>
+      ) : (
+        <span>{message}</span>
+      )}
       <button
         type="button"
         onClick={openKeyModal}

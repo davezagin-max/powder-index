@@ -1,32 +1,89 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. Components only reference tokens, so a project gets its own
- * visual identity (and dark mode) by changing the values in these two blocks.
+ * Design tokens. Components only reference tokens, so dark mode is a second set of
+ * values rather than a second set of styles.
+ *
+ * Identity: snow white and glacier blue. Chart colors are separate from brand colors
+ * on purpose. The eight series colors are a categorical palette checked for
+ * color-vision-deficiency separation in this order, in both modes, against these
+ * surfaces; tiers are a single-hue ramp because they are ordered.
  */
 :root {
-  --bg: #ffffff;
-  --fg: #14161a;
-  --muted: #5c6370;
-  --surface: #f4f5f7;
-  --border: #d9dce1;
-  --accent: #1f5eff;
+  --bg: #f4f8fb;
+  --fg: #0d2233;
+  --muted: #4c6377;
+  --surface: #ffffff;
+  --surface-2: #eaf2f8;
+  --border: #d2e0ea;
+  --accent: #0f6fa3;
   --accent-fg: #ffffff;
+  --accent-soft: #dcecf6;
   --danger: #b3261e;
   --success: #1a7f37;
+  --warn: #8a5a00;
+
+  --grid: #e2ebf1;
+  --axis: #b7c9d6;
+  --topo: rgb(15 111 163 / 0.11);
+
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s3: #1baf7a;
+  --s4: #eda100;
+  --s5: #e87ba4;
+  --s6: #008300;
+  --s7: #4a3aa7;
+  --s8: #e34948;
+  --s-other: #9aacba;
+
+  --tier-off: #c3d2dd;
+  --tier-firm: #86b6ef;
+  --tier-soft: #5598e7;
+  --tier-powder: #256abf;
+  --tier-epic: #0d366b;
+
+  --water: #d3e6f3;
+  --land: #fbfdfe;
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bg: #0e1013;
-  --fg: #eceef2;
-  --muted: #9aa2ae;
-  --surface: #171a1f;
-  --border: #2b3038;
-  --accent: #7aa7ff;
-  --accent-fg: #0e1013;
+  --bg: #08121a;
+  --fg: #e6f0f6;
+  --muted: #93a9ba;
+  --surface: #101b26;
+  --surface-2: #162531;
+  --border: #243747;
+  --accent: #5ab6e4;
+  --accent-fg: #06131c;
+  --accent-soft: #14303f;
   --danger: #ff8a80;
   --success: #56d364;
+  --warn: #e3b341;
+
+  --grid: #1b2a37;
+  --axis: #35495a;
+  --topo: rgb(124 196 235 / 0.085);
+
+  --s1: #3987e5;
+  --s2: #d95926;
+  --s3: #199e70;
+  --s4: #c98500;
+  --s5: #d55181;
+  --s6: #008300;
+  --s7: #9085e9;
+  --s8: #e66767;
+  --s-other: #5d7284;
+
+  --tier-off: #2b3d4c;
+  --tier-firm: #184f95;
+  --tier-soft: #256abf;
+  --tier-powder: #3987e5;
+  --tier-epic: #9ec5f4;
+
+  --water: #12293a;
+  --land: #0d1822;
   color-scheme: dark;
 }
 
@@ -37,13 +94,23 @@
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
   --color-success: var(--success);
+  --color-warn: var(--warn);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 1rem;
 }
 
 body {
@@ -56,7 +123,28 @@ body {
   outline-offset: 2px;
 }
 
+/* Numbers in columns line up; big standalone numbers keep their natural widths. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Chart text wears text tokens, never a series color. */
+.chart-text {
+  fill: var(--muted);
+  font-size: 11px;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+.chart-text-strong {
+  fill: var(--fg);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   *,
   ::before,
   ::after {

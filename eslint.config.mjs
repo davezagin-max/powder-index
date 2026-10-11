@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored engine files copied from node_modules, and the Python project.
+    "public/duckdb/**",
+    "pipeline/**",
+    "site/**",
   ]),
 ]);
 

@@ -52,6 +52,8 @@ SERIES: dict[str, tuple[str, str]] = {
     "pCold": ("s", "cold_points"),
     "pBase": ("s", "base_points"),
 }
+# The order the components are listed and stacked in everywhere on the site.
+COMPONENT_ORDER = ("fresh_24h", "fresh_72h", "density", "cold", "base", "forecast")
 BEST_DAY_COUNT = 6
 BEST_DAY_SPACING = 3  # days between picks, so one storm cycle is not listed twice
 
@@ -203,13 +205,16 @@ def build_dashboard(db: duckdb.DuckDBPyConnection, generated_at: str) -> dict[st
         "sources": sources,
         "dates": dates,
         "resorts": resorts,
-        "components": _rows(
-            db,
-            """
-            select component as key, label, weight, zero_at as "zeroAt", full_at as "fullAt", unit,
-                   input_column as "inputColumn", description
-            from seeds.powder_score_weights order by weight desc, component
-            """,
+        "components": sorted(
+            _rows(
+                db,
+                """
+                select component as key, label, weight, zero_at as "zeroAt", full_at as "fullAt", unit,
+                       input_column as "inputColumn", description
+                from seeds.powder_score_weights
+                """,
+            ),
+            key=lambda row: COMPONENT_ORDER.index(row["key"]),
         ),
         "tiers": _rows(
             db,
