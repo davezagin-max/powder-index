@@ -1,0 +1,245 @@
+{
+  "best-days": {
+    "label": "best-days",
+    "placeholder": true,
+    "recordedAt": null,
+    "model": "claude-opus-5-5",
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0
+    },
+    "costUsd": 0,
+    "data": {
+      "kind": "query",
+      "question": "What were the ten best powder days last season?",
+      "title": "Ten best powder days, winter 2025-26",
+      "note": "Highest powder scores of water year 2026, one bar per resort and day.",
+      "sql": "SELECT\n  resort_name || ', ' || STRFTIME(date, '%b %-d') AS day,\n  powder_score\nFROM powder_score\nWHERE\n  water_year = 2026\nORDER BY\n  powder_score DESC,\n  resort_name\nLIMIT 10",
+      "chart": {
+        "type": "bar",
+        "x": "day",
+        "y": "powder_score",
+        "series": null
+      },
+      "limit": 10,
+      "trail": [],
+      "reason": null
+    }
+  },
+  "cold-smoke": {
+    "label": "cold-smoke",
+    "placeholder": true,
+    "recordedAt": null,
+    "model": "claude-opus-5-5",
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0
+    },
+    "costUsd": 0,
+    "data": {
+      "kind": "query",
+      "question": "Is colder snow really lighter?",
+      "title": "Storm-day snow density against air temperature",
+      "note": "Each point is a resort day with at least 4 inches of new snow; density is percent water.",
+      "sql": "SELECT\n  temp_avg_24h_f,\n  density_24h_pct,\n  resort_name,\n  date\nFROM resort_daily\nWHERE\n  new_snow_24h_in >= 4\n  AND NOT density_24h_pct IS NULL\n  AND NOT temp_avg_24h_f IS NULL\nORDER BY\n  temp_avg_24h_f\nLIMIT 5000",
+      "chart": {
+        "type": "scatter",
+        "x": "temp_avg_24h_f",
+        "y": "density_24h_pct",
+        "series": null
+      },
+      "limit": 5000,
+      "trail": [],
+      "reason": null
+    }
+  },
+  "depth-race": {
+    "label": "depth-race",
+    "placeholder": true,
+    "recordedAt": null,
+    "model": "claude-opus-5-5",
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0
+    },
+    "costUsd": 0,
+    "data": {
+      "kind": "query",
+      "question": "How did the snowpack build at Alta, Snowbird and Brighton over the winter?",
+      "title": "Snow depth through winter 2025-26",
+      "note": "Daily snow depth at the stations for three Cottonwood resorts, November through May.",
+      "sql": "SELECT\n  date,\n  resort_name,\n  snow_depth_in\nFROM resort_daily\nWHERE\n  resort_name IN ('Alta', 'Snowbird', 'Brighton')\n  AND date BETWEEN CAST('2025-11-01' AS DATE) AND CAST('2026-05-31' AS DATE)\nORDER BY\n  date,\n  resort_name\nLIMIT 5000",
+      "chart": {
+        "type": "line",
+        "x": "date",
+        "y": "snow_depth_in",
+        "series": "resort_name"
+      },
+      "limit": 5000,
+      "trail": [],
+      "reason": null
+    }
+  },
+  "february-storm": {
+    "label": "february-storm",
+    "placeholder": true,
+    "recordedAt": null,
+    "model": "claude-opus-5-5",
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0
+    },
+    "costUsd": 0,
+    "data": {
+      "kind": "query",
+      "question": "Rank every resort for the February 19 storm.",
+      "title": "The morning of February 19, 2026",
+      "note": "Each resort's report for 19 February 2026, joined to its powder score.",
+      "sql": "SELECT\n  s.rank,\n  s.resort_name,\n  d.new_snow_24h_in,\n  d.new_snow_72h_in,\n  d.density_72h_pct,\n  d.temp_avg_24h_f,\n  s.powder_score,\n  s.tier\nFROM powder_score AS s\nJOIN resort_daily AS d\n  ON s.resort_id = d.resort_id AND s.date = d.date\nWHERE\n  s.date = CAST('2026-02-19' AS DATE)\nORDER BY\n  s.rank\nLIMIT 5000",
+      "chart": {
+        "type": "table",
+        "x": "resort_name",
+        "y": "powder_score",
+        "series": null
+      },
+      "limit": 5000,
+      "trail": [],
+      "reason": null
+    }
+  },
+  "monthly-cottonwoods": {
+    "label": "monthly-cottonwoods",
+    "placeholder": true,
+    "recordedAt": null,
+    "model": "claude-opus-5-5",
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0
+    },
+    "costUsd": 0,
+    "data": {
+      "kind": "query",
+      "question": "How much snow fell each month in the Cottonwood canyons?",
+      "title": "Monthly snowfall in the Cottonwoods, winter 2025-26",
+      "note": "New snow summed by month for the four Cottonwood resorts in water year 2026.",
+      "sql": "SELECT\n  STRFTIME(DATE_TRUNC('MONTH', d.date), '%b %Y') AS month,\n  d.resort_name,\n  ROUND(SUM(d.new_snow_24h_in), 1) AS snowfall_in\nFROM resort_daily AS d\nJOIN resorts AS r\n  ON d.resort_id = r.resort_id\nWHERE\n  r.area LIKE '%Cottonwood%'\n  AND d.water_year = 2026\n  AND d.date BETWEEN CAST('2025-11-01' AS DATE) AND CAST('2026-04-30' AS DATE)\nGROUP BY\n  DATE_TRUNC('MONTH', d.date),\n  d.resort_name\nORDER BY\n  DATE_TRUNC('MONTH', d.date),\n  d.resort_name\nLIMIT 5000",
+      "chart": {
+        "type": "bar",
+        "x": "month",
+        "y": "snowfall_in",
+        "series": "resort_name"
+      },
+      "limit": 5000,
+      "trail": [],
+      "reason": null
+    }
+  },
+  "powder-day-count": {
+    "label": "powder-day-count",
+    "placeholder": true,
+    "recordedAt": null,
+    "model": "claude-opus-5-5",
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0
+    },
+    "costUsd": 0,
+    "data": {
+      "kind": "query",
+      "question": "How many powder days did each resort have last season?",
+      "title": "Powder days by resort, winter 2025-26",
+      "note": "Days in water year 2026 with a powder score of 55 or more (tiers 'powder' and 'epic').",
+      "sql": "SELECT\n  resort_name,\n  COUNT(*) AS powder_days\nFROM powder_score\nWHERE\n  water_year = 2026 AND powder_score >= 55\nGROUP BY\n  resort_name\nORDER BY\n  powder_days DESC,\n  resort_name\nLIMIT 5000",
+      "chart": {
+        "type": "bar",
+        "x": "resort_name",
+        "y": "powder_days",
+        "series": null
+      },
+      "limit": 5000,
+      "trail": [
+        {
+          "sql": "select resort_name, count(*) as powder_days\nfrom marts.powder_score\nwhere season = 2026 and score >= 55\ngroup by resort_name\norder by powder_days desc",
+          "error": "Do not qualify table names with a schema (marts.powder_score). Use the bare table name.",
+          "stage": "validator"
+        },
+        {
+          "sql": "SELECT\n  resort_name,\n  COUNT(*) AS powder_days\nFROM powder_score\nWHERE\n  season = 2026 AND powder_score >= 55\nGROUP BY\n  resort_name\nORDER BY\n  powder_days DESC\nLIMIT 5000",
+          "error": "Binder Error: Referenced column \"season\" not found in FROM clause!",
+          "stage": "engine"
+        }
+      ],
+      "reason": null
+    }
+  },
+  "season-totals": {
+    "label": "season-totals",
+    "placeholder": true,
+    "recordedAt": null,
+    "model": "claude-opus-5-5",
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0
+    },
+    "costUsd": 0,
+    "data": {
+      "kind": "query",
+      "question": "Which resort got the most snow last season?",
+      "title": "Season snowfall by resort, winter 2025-26",
+      "note": "Total estimated new snow for water year 2026. Station estimates read lower than a resort's own stake.",
+      "sql": "SELECT\n  resort_name,\n  MAX(season_snowfall_in) AS season_snowfall_in\nFROM resort_daily\nWHERE\n  water_year = 2026\nGROUP BY\n  resort_name\nORDER BY\n  season_snowfall_in DESC,\n  resort_name\nLIMIT 5000",
+      "chart": {
+        "type": "bar",
+        "x": "resort_name",
+        "y": "season_snowfall_in",
+        "series": null
+      },
+      "limit": 5000,
+      "trail": [],
+      "reason": null
+    }
+  },
+  "storm-timeline": {
+    "label": "storm-timeline",
+    "placeholder": true,
+    "recordedAt": null,
+    "model": "claude-opus-5-5",
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0
+    },
+    "costUsd": 0,
+    "data": {
+      "kind": "query",
+      "question": "Show the mid-February storm cycle at Snowbird day by day.",
+      "title": "Snowbird, February 12 to 26, 2026",
+      "note": "New snow in the 24 hours before each morning's reading at the Snowbird station.",
+      "sql": "SELECT\n  date,\n  new_snow_24h_in,\n  snow_depth_in,\n  density_24h_pct\nFROM resort_daily\nWHERE\n  resort_name = 'Snowbird'\n  AND date BETWEEN CAST('2026-02-12' AS DATE) AND CAST('2026-02-26' AS DATE)\nORDER BY\n  date\nLIMIT 5000",
+      "chart": {
+        "type": "line",
+        "x": "date",
+        "y": "new_snow_24h_in",
+        "series": null
+      },
+      "limit": 5000,
+      "trail": [],
+      "reason": null
+    }
+  }
+}

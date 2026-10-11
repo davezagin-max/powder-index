@@ -1,4 +1,66 @@
 [
-  { "route": "/api/example", "body": { "demoId": "powder-day", "topic": "a powder day in the Wasatch" } },
-  { "route": "/api/example", "body": { "demoId": "house-set", "topic": "the first drop in a house set" } }
+  {
+    "route": "/api/ask",
+    "body": {
+      "demoId": "best-days",
+      "question": "What were the ten best powder days last season?",
+      "attempts": []
+    }
+  },
+  {
+    "route": "/api/ask",
+    "body": {
+      "demoId": "season-totals",
+      "question": "Which resort got the most snow last season?",
+      "attempts": []
+    }
+  },
+  {
+    "route": "/api/ask",
+    "body": {
+      "demoId": "depth-race",
+      "question": "How did the snowpack build at Alta, Snowbird and Brighton over the winter?",
+      "attempts": []
+    }
+  },
+  {
+    "route": "/api/ask",
+    "body": {
+      "demoId": "cold-smoke",
+      "question": "Is colder snow really lighter?",
+      "attempts": []
+    }
+  },
+  {
+    "route": "/api/ask",
+    "body": {
+      "demoId": "monthly-cottonwoods",
+      "question": "How much snow fell each month in the Cottonwood canyons?",
+      "attempts": []
+    }
+  },
+  {
+    "route": "/api/ask",
+    "body": {
+      "demoId": "february-storm",
+      "question": "Rank every resort for the February 19 storm.",
+      "attempts": []
+    }
+  },
+  {
+    "route": "/api/ask",
+    "body": {
+      "demoId": "powder-day-count",
+      "question": "How many powder days did each resort have last season?",
+      "attempts": []
+    }
+  },
+  {
+    "route": "/api/ask",
+    "body": {
+      "demoId": "storm-timeline",
+      "question": "Show the mid-February storm cycle at Snowbird day by day.",
+      "attempts": []
+    }
+  }
 ]

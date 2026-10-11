@@ -1,1 +1,8 @@
-pipeline
+# The site needs only pipeline/app (the /api/ask function). Everything else in
+# pipeline/ runs in GitHub Actions, not on Vercel.
+pipeline/.venv
+pipeline/data
+pipeline/dbt
+pipeline/powder
+pipeline/scripts
+pipeline/tests

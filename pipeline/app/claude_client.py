@@ -46,6 +46,18 @@ class MissingKeyError(Exception):
     """A missing or malformed key, caught before any network call."""
 
 
+class PipelineError(Exception):
+    """A failure whose message is safe and useful to show the visitor.
+
+    Raise it from a live handler; `api_error` passes the message and status through.
+    Never put secrets or raw model output in the message.
+    """
+
+    def __init__(self, message: str, status: int = 502):
+        super().__init__(message)
+        self.status = status
+
+
 @dataclass
 class ToolCall:
     id: str
@@ -290,6 +302,8 @@ def api_error(error: Exception) -> tuple[int, str]:
     """Map SDK errors to a safe (status, message). Never includes the key or request body."""
     if isinstance(error, MissingKeyError):
         return 401, str(error)
+    if isinstance(error, PipelineError):
+        return error.status, str(error)
     if isinstance(error, anthropic.AuthenticationError):
         return 401, "Anthropic rejected that API key."
     if isinstance(error, anthropic.PermissionDeniedError):

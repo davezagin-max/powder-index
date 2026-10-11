@@ -34,7 +34,7 @@
       "id": "model.powder_index.powder_score",
       "name": "powder_score",
       "layer": "marts",
-      "tests": 15
+      "tests": 16
     },
     {
       "id": "model.powder_index.resort_daily",

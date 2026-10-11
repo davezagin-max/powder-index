@@ -148,6 +148,9 @@ models:
       - name: date
         description: Report date (DATE). Joins to resort_daily.date.
         data_tests: [not_null]
+      - name: water_year
+        description: "Season label (INTEGER), named for the year the season ends in: winter 2025-26 is water year 2026."
+        data_tests: [not_null]
       - name: powder_score
         description: Powder score from 0 (nothing to ski) to 100 (deep, light, cold, and more coming).
         data_tests:

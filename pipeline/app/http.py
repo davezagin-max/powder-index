@@ -27,8 +27,8 @@ from .claude_client import CallResult, MissingKeyError, api_error, client_for_ke
 from .config import Usage
 
 MISS_MESSAGE = (
-    "Demo mode only replays recorded runs. Pick one of the presets, "
-    "or add your Anthropic key to run this live."
+    "Demo mode only answers the preset questions. Pick one of them, "
+    "or add your Anthropic key to ask your own."
 )
 
 

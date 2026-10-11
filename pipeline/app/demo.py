@@ -16,7 +16,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-FIXTURE_DIR = Path(__file__).resolve().parent.parent / "fixtures"
+# One fixture store for the whole repo: the Next.js app bundles `fixtures/ask.json` for
+# demo mode in the browser, and this API reads and records the same file.
+FIXTURE_DIR = Path(__file__).resolve().parent.parent.parent / "fixtures"
 _DEMO_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _STORE = re.compile(r"^[a-z0-9-]+$")
 

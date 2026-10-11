@@ -194,3 +194,14 @@ def test_key_validation() -> None:
     with pytest.raises(MissingKeyError):
         client_for_key("not-a-key")
     assert client_for_key("sk-ant-test-0123456789abcdef") is not None
+
+
+def test_pipeline_error_keeps_its_message_and_status() -> None:
+    from app.claude_client import PipelineError, api_error
+
+    assert api_error(PipelineError("The query failed validation twice.")) == (
+        502,
+        "The query failed validation twice.",
+    )
+    assert api_error(PipelineError("Too long.", status=400)) == (400, "Too long.")
+    assert api_error(RuntimeError("secret detail")) == (500, "Something went wrong.")

@@ -33,6 +33,7 @@ components as (
         daily.resort_id,
         daily.resort_name,
         daily.date,
+        daily.water_year,
         daily.new_snow_72h_in,
         daily.snow_depth_in,
         coalesce({{ normalize('daily.new_snow_24h_in', 'weights.zero_fresh_24h', 'weights.full_fresh_24h') }}, 0)
@@ -73,6 +74,7 @@ points as (
         resort_id,
         resort_name,
         date,
+        water_year,
         new_snow_72h_in,
         snow_depth_in,
         {% for component in components %}
@@ -102,6 +104,7 @@ select
     scored.resort_id,
     scored.resort_name,
     scored.date,
+    scored.water_year,
     scored.powder_score,
     tiers.tier,
     cast(

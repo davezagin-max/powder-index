@@ -5,37 +5,73 @@ from fastapi import FastAPI, Response
 from fastapi.testclient import TestClient
 
 from app import demo
-from app.http import Live, RateLimiter, respond_stream
-from app.main import app
+from app.claude_client import PipelineError
+from app.http import Live, RateLimiter, get_client, respond_stream
+from app.main import app, rate_limit
+from tests.fakes import FakeClient, block, message
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def fresh_state(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("ALLOW_SERVER_KEY", raising=False)
+    monkeypatch.delenv("RECORD_FIXTURES", raising=False)
+    rate_limit._windows.clear()
+    yield
+    app.dependency_overrides.clear()
+
+
+def tool_turn(sql: str):
+    call = block(
+        "tool_use",
+        id="t1",
+        name="run_query",
+        input={
+            "sql": sql,
+            "title": "Resorts",
+            "chart": {"type": "table", "x": "resort_name", "y": "summit_elev_ft", "series": None},
+            "note": "All resorts.",
+        },
+    )
+    return message([block("thinking", thinking="", signature="s"), call], "tool_use")
 
 
 def test_health() -> None:
     assert client.get("/health").json() == {"status": "ok"}
 
 
-def test_demo_mode_replays_a_fixture_without_a_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("ALLOW_SERVER_KEY", raising=False)
-    res = client.post("/api/example", json={"demoId": "powder-day", "topic": "snow"})
+def test_demo_mode_replays_a_preset_without_a_key() -> None:
+    fixture = demo.find_fixture("ask", "season-totals")
+    assert fixture is not None
+    res = client.post(
+        "/api/ask",
+        json={
+            "demoId": "season-totals",
+            "question": "Which resort got the most snow last season?",
+            "attempts": [],
+        },
+    )
     body = res.json()
-    assert res.status_code == 200
-    assert body["ok"] is True
+    assert res.status_code == 200 and body["ok"] is True
     assert body["meta"]["mode"] == "demo"
-    assert body["meta"]["placeholder"] is True
-    assert len(body["data"]["lines"]) == 3
+    # Follows the fixture, so this keeps passing once real runs are recorded.
+    assert body["meta"]["placeholder"] is fixture["placeholder"]
+    assert body["data"]["kind"] == "query"
+    assert body["data"]["sql"] == fixture["data"]["sql"]
 
 
-def test_demo_miss_is_explained(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("ALLOW_SERVER_KEY", raising=False)
-    res = client.post("/api/example", json={"topic": "something unrecorded"})
+def test_demo_miss_is_explained() -> None:
+    res = client.post("/api/ask", json={"question": "something nobody recorded"})
     assert res.status_code == 404
     assert res.json()["error"]["kind"] == "demo_miss"
 
 
 def test_malformed_key_is_rejected_and_not_echoed() -> None:
     res = client.post(
-        "/api/example", json={"topic": "x"}, headers={"x-anthropic-key": "definitely-not-a-key"}
+        "/api/ask",
+        json={"question": "deepest snow?"},
+        headers={"x-anthropic-key": "definitely-not-a-key"},
     )
     assert res.status_code == 401
     assert res.json()["error"]["kind"] == "auth"
@@ -43,8 +79,64 @@ def test_malformed_key_is_rejected_and_not_echoed() -> None:
 
 
 def test_oversized_body_is_rejected() -> None:
-    res = client.post("/api/example", content=b'{"topic":"' + b"a" * 70_000 + b'"}')
+    res = client.post("/api/ask", content=b'{"question":"' + b"a" * 20_000 + b'"}')
     assert res.status_code == 413
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"question": "hi"},  # too short
+        {"question": "x" * 401},
+        {
+            "question": "deepest snow?",
+            "attempts": [{"sql": "select 1", "error": "e"}] * 3,
+        },  # one retry too many
+        {"question": "deepest snow?", "attempts": [{"sql": "", "error": "e"}]},
+        {"attempts": []},
+    ],
+)
+def test_invalid_bodies_get_the_standard_envelope(payload: dict) -> None:
+    res = client.post("/api/ask", json=payload)
+    assert res.status_code == 400
+    assert res.json() == {
+        "ok": False,
+        "error": {"kind": "invalid", "message": "Request body has an invalid shape."},
+    }
+
+
+def test_live_path_runs_the_loop_and_reports_cost() -> None:
+    fake = FakeClient(
+        [tool_turn("select resort_name, summit_elev_ft from resorts order by summit_elev_ft desc")]
+    )
+    app.dependency_overrides[get_client] = lambda: fake
+    res = client.post("/api/ask", json={"question": "List the resorts by summit elevation."})
+    body = res.json()
+    assert res.status_code == 200 and body["ok"] is True
+    assert body["meta"]["mode"] == "live" and body["meta"]["placeholder"] is False
+    assert body["meta"]["usage"]["input_tokens"] == 100
+    assert body["meta"]["costUsd"] == pytest.approx((100 * 4 + 50 * 20) / 1_000_000)
+    assert body["data"]["sql"].rstrip().endswith("LIMIT 5000")
+    assert len(fake.requests) == 1
+
+
+def test_live_refusal_maps_to_422() -> None:
+    details = block("refusal", category="cyber", explanation="no")
+    app.dependency_overrides[get_client] = lambda: FakeClient(
+        [message([], "refusal", stop_details=details)]
+    )
+    res = client.post("/api/ask", json={"question": "deepest snow?"})
+    assert res.status_code == 422
+    assert res.json()["error"]["kind"] == "refusal"
+    assert res.json()["meta"]["mode"] == "live"
+
+
+def test_pipeline_errors_keep_their_message() -> None:
+    app.dependency_overrides[get_client] = lambda: FakeClient([message([], "max_tokens")])
+    res = client.post("/api/ask", json={"question": "deepest snow?"})
+    assert res.status_code == 502
+    assert "ran out of room" in res.json()["error"]["message"]
+    assert PipelineError("x", 400).status == 400
 
 
 def test_rate_limiter_blocks_after_the_limit() -> None:
@@ -54,6 +146,12 @@ def test_rate_limiter_blocks_after_the_limit() -> None:
     assert not limiter.check("ip", now=0.2)
     assert limiter.check("other", now=0.2)
     assert limiter.check("ip", now=1.5)
+
+
+def test_the_endpoint_is_rate_limited() -> None:
+    payload = {"demoId": "season-totals", "question": "Which resort got the most snow last season?"}
+    statuses = [client.post("/api/ask", json=payload).status_code for _ in range(22)]
+    assert statuses[:20] == [200] * 20 and statuses[20:] == [429, 429]
 
 
 def test_request_key_prefers_a_safe_demo_id() -> None:

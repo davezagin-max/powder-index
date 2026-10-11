@@ -1,0 +1,6 @@
+# Runtime dependencies of the /api/ask function only. Kept in step with pipeline/uv.lock;
+# sqlglot is pinned exactly because the SQL firewall's behavior depends on its parser.
+anthropic>=1.13
+fastapi>=0.143.0
+pydantic>=2.14.0
+sqlglot==30.22.0
