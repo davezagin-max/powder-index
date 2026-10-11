@@ -21,10 +21,10 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, timezone, tzinfo
 from pathlib import Path
 from typing import Any, Literal
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import anthropic
 from pydantic import BaseModel, Field, model_validator
@@ -235,7 +235,15 @@ SYSTEM_PROMPT = build_system_prompt()
 
 
 def today_in_utah() -> str:
-    return datetime.now(ZoneInfo("America/Denver")).date().isoformat()
+    """Today's date in Utah, which is what "last season" and "this week" are relative to."""
+    zone: tzinfo
+    try:
+        zone = ZoneInfo("America/Denver")
+    except ZoneInfoNotFoundError:
+        # A slim serverless image may ship without the time zone database. Mountain
+        # Standard Time is at most an hour off, which cannot change the season.
+        zone = timezone(timedelta(hours=-7))
+    return datetime.now(zone).date().isoformat()
 
 
 def build_user_message(body: AskBody, today: str) -> str:

@@ -252,3 +252,19 @@ def test_system_prompt_documents_the_whole_schema_and_is_stable() -> None:
     assert len(prompt) > 8000
     assert "Today is" not in prompt
     assert {"resorts", "resort_daily", "powder_score"} == ask.TABLES
+
+
+def test_todays_date_survives_a_runtime_without_time_zone_data(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A slim serverless image can lack the tz database; the request must not die on it."""
+    import re
+    from zoneinfo import ZoneInfoNotFoundError
+
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", ask.today_in_utah())
+
+    def missing(_: str) -> object:
+        raise ZoneInfoNotFoundError("No time zone found with key America/Denver")
+
+    monkeypatch.setattr(ask, "ZoneInfo", missing)
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", ask.today_in_utah())
