@@ -124,6 +124,23 @@ describe("live mode", () => {
     expect(outcome.meta.usage.input_tokens).toBe(200);
   });
 
+  it("keeps a validator rejection from an earlier request in the trail, in order", async () => {
+    const blocked = { sql: "SELECT * FROM marts.resorts", error: "Do not qualify table names with a schema.", stage: "validator" as const };
+    const bad = "SELECT season FROM resort_daily LIMIT 5000";
+    const engineError = 'Binder Error: Referenced column "season" not found';
+    const post = vi
+      .fn<AskDeps["post"]>()
+      // First request: the firewall turns one query down, then lets `bad` through.
+      .mockResolvedValueOnce(live(answer(bad, { trail: [blocked] })))
+      // Second request: a fresh conversation that only knows about the engine failure.
+      .mockResolvedValueOnce(live(answer("SELECT water_year FROM resort_daily LIMIT 5000", { trail: [{ sql: bad, error: engineError, stage: "engine" }] })));
+    const execute = vi.fn<AskDeps["execute"]>().mockRejectedValueOnce(new Error(engineError)).mockResolvedValueOnce(ROWS);
+    const outcome = await runAsk("Which seasons?", undefined, deps({ post, execute }));
+    expect(outcome.status).toBe("answered");
+    if (outcome.status !== "answered") return;
+    expect(outcome.trail).toEqual([blocked, { sql: bad, error: engineError, stage: "engine" }]);
+  });
+
   it("gives up after two retries and keeps the whole trail", async () => {
     const post = vi.fn<AskDeps["post"]>(async (body) =>
       live(

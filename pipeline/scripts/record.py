@@ -9,6 +9,11 @@ against the published Parquet, and if the database rejects it, post again with t
 error, up to two times. Each response overwrites the fixture of the same `demoId` in
 fixtures/ask.json, so the last one (with the full retry trail) is what remains.
 
+A recording is kept only if a visitor could use it: the query runs, returns rows, and
+its chart can be drawn from them (`powder.answers.run_answer`, the same check the
+fixture tests make). Otherwise the fixture that was there before is put back, so a bad
+run can never replace a working demo answer or break the tests.
+
 The key is read from the environment or a `.env` file one or two directories up, and
 is never printed. Stops when the budget is reached.
 """
@@ -32,6 +37,7 @@ REPO = ROOT.parent
 sys.path.insert(0, str(ROOT))
 
 from app.ask import MAX_ENGINE_RETRIES  # noqa: E402
+from powder.answers import UnfitAnswer, run_answer  # noqa: E402
 
 FIXTURES = REPO / "fixtures"
 PUBLIC_DATA = REPO / "public" / "data"
@@ -84,7 +90,9 @@ def record_preset(
         if data["kind"] != "query":
             return False, spent, usage, f"{data['kind']}: {data.get('reason')}"
         try:
-            rows = db.execute(data["sql"]).fetchall()
+            rows = run_answer(db, data["sql"], data["chart"], data["limit"])
+        except UnfitAnswer as problem:
+            return False, spent, usage, f"not usable as a demo answer: {problem}"
         except duckdb.Error as error:
             message = str(error).strip().splitlines()[0]
             if len(attempts) >= MAX_ENGINE_RETRIES:
@@ -101,8 +109,23 @@ def record_preset(
             True,
             spent,
             usage,
-            f"{len(rows)} rows, {data['chart']['type']} chart, trail {trail or 'none'}",
+            f"{rows} rows, {data['chart']['type']} chart, trail {trail or 'none'}",
         )
+
+
+def read_fixture(demo_id: str) -> dict[str, Any] | None:
+    return json.loads((FIXTURES / "ask.json").read_text()).get(demo_id)
+
+
+def restore_fixture(demo_id: str, before: dict[str, Any] | None) -> None:
+    """Undo whatever the API recorded for a preset whose run did not hold up."""
+    path = FIXTURES / "ask.json"
+    store = json.loads(path.read_text())
+    if before is None:
+        store.pop(demo_id, None)
+    else:
+        store[demo_id] = before
+    path.write_text(json.dumps(dict(sorted(store.items())), indent=2) + "\n")
 
 
 def patch_totals(demo_id: str, spent: float, usage: dict[str, int]) -> None:
@@ -169,6 +192,7 @@ def main() -> int:
                     )
                     failed += 1
                     break
+                before = read_fixture(demo_id)
                 ok, spent, usage, outcome = record_preset(http, db, base, preset)
                 total += spent
                 if ok:
@@ -176,9 +200,13 @@ def main() -> int:
                     print(f"recorded  {demo_id:<22} ${spent:.4f}  {outcome}")
                 else:
                     failed += 1
-                    print(f"FAILED    {demo_id:<22} ${spent:.4f}  {outcome}", file=sys.stderr)
+                    restore_fixture(demo_id, before)
+                    print(
+                        f"FAILED    {demo_id:<22} ${spent:.4f}  {outcome} (kept the previous fixture)",
+                        file=sys.stderr,
+                    )
         print(f"\nTotal spent: ${total:.4f} across {len(presets)} preset(s). Failures: {failed}.")
-        print("Now run `uv run pytest -q tests/test_fixtures.py` to check the recordings.")
+        print("Now run `pnpm test` and `cd pipeline && uv run pytest -q` to check the recordings.")
         return 1 if failed else 0
     finally:
         server.terminate()

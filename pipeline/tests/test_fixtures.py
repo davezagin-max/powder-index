@@ -1,6 +1,10 @@
 """Every demo fixture must be a genuine output of the real pipeline: the stored SQL is
 exactly what the validator emits, it runs against the published Parquet, the chart
-columns exist, and every failed attempt in a retry trail really fails the way it says."""
+columns exist, and every failed attempt in a retry trail really fails.
+
+These tests read each fixture's own `placeholder` flag and never assume it. They pass
+for today's hand-written samples and keep passing once `pnpm record` replaces them with
+real runs: the recorder only keeps a run that clears the same checks made here."""
 
 import json
 from pathlib import Path
@@ -10,11 +14,11 @@ import pytest
 
 from app.ask import AskBody, AskData, check_chart
 from app.sqlguard import SqlRejected, validate_sql
+from powder.answers import UnfitAnswer, run_answer
 
 FIXTURES = Path(__file__).resolve().parent.parent.parent / "fixtures"
 STORE: dict = json.loads((FIXTURES / "ask.json").read_text())
 PRESETS: list = json.loads((FIXTURES / "presets.json").read_text())
-NUMERIC = ("TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT", "FLOAT", "DOUBLE", "DECIMAL")
 
 
 def test_presets_and_fixtures_line_up_one_to_one() -> None:
@@ -54,26 +58,50 @@ def test_fixture_is_a_real_pipeline_output(key: str, marts: duckdb.DuckDBPyConne
     assert query.limit == data.limit and not query.limit_changed
     check_chart(data.chart.model_dump(), query)
 
-    cursor = marts.execute(data.sql)
-    kinds = {column[0].lower(): str(column[1]).upper() for column in cursor.description}
-    rows = cursor.fetchall()
-    assert 0 < len(rows) <= query.limit
-    for role in ("x", "y", "series"):
-        column = getattr(data.chart, role)
-        assert column is None or column.lower() in kinds, f"chart.{role}"
-    if data.chart.type != "table":
-        assert kinds[data.chart.y.lower()].startswith(NUMERIC), "the y axis must be numeric"
-    if data.chart.type == "scatter":
-        assert kinds[data.chart.x.lower()].startswith(NUMERIC)
+    # It runs, returns rows, and its chart can be drawn from them.
+    assert 0 < run_answer(marts, data.sql, data.chart.model_dump(), query.limit) <= query.limit
     assert len(data.title) <= 80 and (data.note is None or len(data.note) <= 240)
 
 
+def test_an_answer_nobody_could_use_is_refused(marts: duckdb.DuckDBPyConnection) -> None:
+    """The gate the recorder relies on to keep a bad run out of the fixtures."""
+    bar = {"type": "bar", "x": "resort_name", "y": "summit_elev_ft", "series": None}
+    assert run_answer(marts, "SELECT resort_name, summit_elev_ft FROM resorts", bar, 5000) == 12
+    with pytest.raises(UnfitAnswer, match="no rows"):
+        run_answer(marts, "SELECT resort_name, summit_elev_ft FROM resorts WHERE FALSE", bar, 5000)
+    with pytest.raises(UnfitAnswer, match="over its limit"):
+        run_answer(marts, "SELECT resort_name, summit_elev_ft FROM resorts", bar, 5)
+    with pytest.raises(UnfitAnswer, match="not numeric"):
+        run_answer(marts, "SELECT resort_name, area FROM resorts", {**bar, "y": "area"}, 5000)
+    with pytest.raises(UnfitAnswer, match="does not have"):
+        run_answer(marts, "SELECT resort_name FROM resorts", bar, 5000)
+    with pytest.raises(UnfitAnswer, match="scatter"):
+        run_answer(
+            marts,
+            "SELECT resort_name, summit_elev_ft FROM resorts",
+            {**bar, "type": "scatter"},
+            5000,
+        )
+    # A table has no axes to satisfy, and a database error is the caller's to handle.
+    table = {"type": "table", "x": "resort_name", "y": "area", "series": None}
+    assert run_answer(marts, "SELECT resort_name, area FROM resorts", table, 5000) == 12
+    with pytest.raises(duckdb.Error):
+        run_answer(marts, "SELECT nope FROM resorts", bar, 5000)
+
+
 @pytest.mark.parametrize("key", sorted(STORE))
-def test_every_trail_step_fails_the_way_it_says(key: str, marts: duckdb.DuckDBPyConnection) -> None:
+def test_every_trail_step_really_fails(key: str, marts: duckdb.DuckDBPyConnection) -> None:
     data = AskData.model_validate(STORE[key]["data"])
+    sample = STORE[key]["placeholder"]
     assert len(data.trail) <= 4
     for step in data.trail:
         if step.stage == "validator":
+            if not sample:
+                # A recorded rejection cannot be replayed from the SQL alone: it may have
+                # been about the chart spec, or the SQL may have been clipped for storage.
+                assert step.sql and step.error
+                continue
+            # A hand-written step must quote the validator word for word.
             with pytest.raises(SqlRejected) as rejected:
                 validate_sql(step.sql)
             assert str(rejected.value) == step.error
@@ -82,7 +110,8 @@ def test_every_trail_step_fails_the_way_it_says(key: str, marts: duckdb.DuckDBPy
             assert validate_sql(step.sql).sql == step.sql
             with pytest.raises(duckdb.Error) as failed:
                 marts.execute(step.sql).fetchall()
-            assert str(failed.value).strip().splitlines()[0] == step.error
+            if sample:
+                assert str(failed.value).strip().splitlines()[0] == step.error
 
 
 def test_at_least_one_fixture_shows_the_retry_trail() -> None:

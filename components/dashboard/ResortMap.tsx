@@ -92,6 +92,10 @@ function Frame({
               const [x, y] = map.project(day.resort.lat, day.resort.lon);
               const label = LABELS[day.resort.id] ?? { dx: 12, dy: 4, anchor: "start" as const };
               const selected = day.resort.id === selectedId;
+              // The selection ring is wider than the dot, so the label steps out of its way.
+              const reach = Math.hypot(label.dx, label.dy) || 1;
+              const dx = label.dx + (selected ? (5 * label.dx) / reach : 0);
+              const dy = label.dy + (selected ? (5 * label.dy) / reach : 0);
               return (
                 <g
                   key={day.resort.id}
@@ -112,7 +116,7 @@ function Frame({
                   <circle cx={x} cy={y} r={16} fill="transparent" stroke="transparent" strokeWidth={2} />
                   {selected && <circle cx={x} cy={y} r={11.5} fill="none" stroke="var(--accent)" strokeWidth={2} />}
                   <circle cx={x} cy={y} r={7} fill={tierColor(day.tier.tier)} stroke="var(--surface)" strokeWidth={2} />
-                  <text x={x + label.dx} y={y + label.dy} textAnchor={label.anchor} className="chart-text-strong" style={{ paintOrder: "stroke", stroke: "var(--land)", strokeWidth: 3 }}>
+                  <text x={x + dx} y={y + dy} textAnchor={label.anchor} className="chart-text-strong" style={{ paintOrder: "stroke", stroke: "var(--land)", strokeWidth: 3 }}>
                     {day.resort.name}
                     <tspan className="chart-text" dx={5} style={{ paintOrder: "stroke", stroke: "var(--land)", strokeWidth: 3 }}>
                       {day.score.toFixed(0)}

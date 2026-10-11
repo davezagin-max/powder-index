@@ -127,6 +127,26 @@ def test_validation_is_idempotent() -> None:
         assert not twice.limit_changed
 
 
+def test_output_that_would_not_regenerate_identically_is_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The fixed point is enforced, not hoped for: if a second pass over the approved
+    text ever produced different text, nothing is returned."""
+    real_parse = sqlguard._parse
+    calls: list[str] = []
+
+    def drifting(sql: str) -> object:
+        calls.append(sql)
+        # On the second pass, read the regenerated text as a slightly different query.
+        return real_parse(sql.replace("7000", "7001") if len(calls) == 2 else sql)
+
+    monkeypatch.setattr(sqlguard, "_parse", drifting)
+    with pytest.raises(SqlRejected) as rejected:
+        validate_sql("select resort_name from resorts where base_elev_ft > 7000 limit 5")
+    assert rejected.value.code == "construct"
+    assert len(calls) == 2
+
+
 def test_it_reports_the_tables_a_query_reads() -> None:
     assert validate_sql(ALLOWED["join_two_marts"]).tables == ("powder_score", "resort_daily")
     # A CTE is not a published table, and a CTE may shadow nothing it should not.

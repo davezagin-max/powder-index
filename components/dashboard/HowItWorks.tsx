@@ -1,12 +1,12 @@
 import lineage from "@/public/data/lineage.json";
-import { layoutLineage } from "@/lib/lineage";
+import { edgePath, layoutLineage } from "@/lib/lineage";
 import type { Dashboard } from "@/lib/data/types";
 import { COMPONENT_COLOR, tierColor } from "@/lib/ui/colors";
 
 const DOCS_URL = "https://davezagin-max.github.io/powder-index/docs/";
 const REPO_URL = "https://github.com/davezagin-max/powder-index";
 
-const NODE = { width: 150, height: 38, gapX: 24, gapY: 8 };
+const NODE = { width: 144, height: 38, gapX: 32, gapY: 8 };
 const LAYER_NAME: Record<string, string> = {
   source: "source",
   seed: "seed",
@@ -15,43 +15,34 @@ const LAYER_NAME: Record<string, string> = {
   marts: "mart",
 };
 
+// The layout depends only on the bundled lineage file, so it is worked out once.
+const LAYOUT = layoutLineage(lineage.nodes, lineage.edges);
+
 /** The dbt DAG, drawn from the manifest the pipeline exports. */
 function Lineage() {
-  const columns = layoutLineage(lineage.nodes, lineage.edges);
-  const position = new Map<string, { x: number; y: number }>();
-  columns.forEach((nodes, c) =>
-    nodes.forEach((node, r) => position.set(node.id, { x: c * (NODE.width + NODE.gapX), y: r * (NODE.height + NODE.gapY) })),
-  );
-  const width = columns.length * NODE.width + (columns.length - 1) * NODE.gapX;
-  const height = Math.max(...columns.map((nodes) => nodes.length)) * (NODE.height + NODE.gapY) - NODE.gapY;
+  const columns = LAYOUT.columns.length;
+  const width = columns * NODE.width + (columns - 1) * NODE.gapX;
+  const height = LAYOUT.rowCount * (NODE.height + NODE.gapY) - NODE.gapY;
   const tests = lineage.nodes.reduce((sum, node) => sum + node.tests, 0);
   return (
     <figure className="flex min-w-0 flex-col gap-2">
       <figcaption className="font-semibold">Lineage: from two public APIs to one score</figcaption>
       <div className="overflow-x-auto rounded-lg border border-border bg-surface p-4" tabIndex={0} role="region" aria-label="dbt lineage diagram, scrollable">
-        <svg width={width} height={height} role="img" aria-label={`dbt lineage: ${lineage.nodes.length} sources, seeds and models joined by ${lineage.edges.length} dependencies, from raw sources on the left to the powder_score mart on the right.`} className="block">
-          {lineage.edges.map((edge) => {
-            const from = position.get(edge.from);
-            const to = position.get(edge.to);
-            if (!from || !to) return null;
-            const x1 = from.x + NODE.width;
-            const y1 = from.y + NODE.height / 2;
-            const x2 = to.x;
-            const y2 = to.y + NODE.height / 2;
-            const bend = Math.min(Math.max((x2 - x1) / 2, 12), 60);
-            return <path key={`${edge.from}>${edge.to}`} d={`M${x1},${y1}C${x1 + bend},${y1} ${x2 - bend},${y2} ${x2},${y2}`} fill="none" stroke="var(--axis)" strokeWidth={1} />;
-          })}
+        <svg width={width} height={height} role="img" aria-label={`dbt lineage: ${lineage.nodes.length} sources, seeds and models joined by ${lineage.edges.length} dependencies, from the raw sources on the left to the powder_score mart on the right.`} className="block">
+          {LAYOUT.edges.map((edge) => (
+            <path key={`${edge.from}>${edge.to}`} d={edgePath(edge, NODE)} fill="none" stroke="var(--axis)" strokeWidth={1.25} />
+          ))}
           {lineage.nodes.map((node) => {
-            const at = position.get(node.id);
+            const at = LAYOUT.position.get(node.id);
             if (!at) return null;
             const mart = node.layer === "marts";
             const raw = node.layer === "source" || node.layer === "seed";
             return (
-              <g key={node.id} transform={`translate(${at.x},${at.y})`}>
+              <g key={node.id} transform={`translate(${at.column * (NODE.width + NODE.gapX)},${at.row * (NODE.height + NODE.gapY)})`}>
                 <title>{`${node.name} (${LAYER_NAME[node.layer] ?? node.layer}), ${node.tests} tests`}</title>
                 <rect width={NODE.width} height={NODE.height} rx={5} fill={mart ? "var(--accent-soft)" : raw ? "var(--surface-2)" : "var(--surface)"} stroke={mart ? "var(--accent)" : "var(--border)"} />
                 <text x={9} y={16} className="chart-text-strong" style={{ fontFamily: "var(--font-geist-mono), monospace", fontWeight: 500, fontSize: 10.5 }}>
-                  {node.name.length > 21 ? `${node.name.slice(0, 20)}…` : node.name}
+                  {node.name.length > 20 ? `${node.name.slice(0, 19)}…` : node.name}
                 </text>
                 <text x={9} y={30} className="chart-text" style={{ fontSize: 10 }}>
                   {LAYER_NAME[node.layer] ?? node.layer}
@@ -63,8 +54,8 @@ function Lineage() {
         </svg>
       </div>
       <p className="text-xs text-muted">
-        The dbt project as it was last built: {lineage.nodes.length} nodes and {tests} tests. Full documentation, with
-        a description of every column, is{" "}
+        The dbt project as it was last built: {lineage.nodes.length} nodes and {tests} tests. Seeds sit beside the
+        first model that reads them. Full documentation, with a description of every column, is{" "}
         <a href={DOCS_URL} className="underline underline-offset-2">
           published with each pipeline run
         </a>
@@ -88,7 +79,7 @@ export function HowItWorks({ data }: { data: Dashboard }) {
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-muted">
           Each morning a GitHub Actions job pulls daily SNOTEL readings from the NRCS and the 72-hour forecast from the
-          National Weather Service, dbt turns them into two tables, and the result is published as Parquet and JSON.
+          National Weather Service, dbt turns them into three tables, and the result is published as Parquet and JSON.
           There is no server in the data path. The score is a weighted mean of six ramps:
         </p>
         <p className="mt-2 rounded-md bg-surface-2 px-3 py-2 font-mono text-[12.5px] leading-relaxed">

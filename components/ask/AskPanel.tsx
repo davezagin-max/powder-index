@@ -52,14 +52,22 @@ function provenance(outcome: Extract<Finished, { status: "answered" | "declined"
   return `Replaying a Claude Opus 5.5 answer recorded${when}. The SQL ran again just now in your browser.`;
 }
 
-function Trail({ steps, resolved }: { steps: TrailStep[]; resolved: boolean }) {
+/**
+ * The failed attempts that came before an answer. `sample` is the fixture's own
+ * placeholder flag: a hand-written trail is never described as the model correcting
+ * itself, even though each error shown is the one that SQL really produces.
+ */
+function Trail({ steps, resolved, sample = false }: { steps: TrailStep[]; resolved: boolean; sample?: boolean }) {
   if (steps.length === 0) return null;
+  const attempts = steps.length === 1 ? "one attempt" : `${steps.length} attempts`;
   return (
     <section aria-label="Earlier attempts" className="rounded-md border border-border">
       <h4 className="border-b border-border bg-surface-2 px-3 py-2 text-sm font-medium">
-        {resolved
-          ? `Self-corrected: ${steps.length === 1 ? "one attempt" : `${steps.length} attempts`} failed before this one worked`
-          : `${steps.length} ${steps.length === 1 ? "attempt" : "attempts"} failed`}
+        {!resolved
+          ? `${steps.length} ${steps.length === 1 ? "attempt" : "attempts"} failed`
+          : sample
+            ? `Sample retry trail: ${attempts} written by hand to fail, with the real error each one gets back`
+            : `Self-corrected: ${attempts} failed before this one worked`}
       </h4>
       <ol className="divide-y divide-border">
         {steps.map((step, index) => (
@@ -113,7 +121,7 @@ function Answer({ outcome }: { outcome: Extract<Finished, { status: "answered" }
         )}
       </figcaption>
 
-      <Trail steps={outcome.trail} resolved />
+      <Trail steps={outcome.trail} resolved sample={outcome.meta.mode === "demo" && outcome.meta.placeholder} />
 
       {showing === "chart" && model.kind !== "table" ? (
         <ResultChart model={model} />
@@ -253,7 +261,7 @@ export function AskPanel({ dataUrl }: { dataUrl: string }) {
           disabled={!isLive}
           aria-describedby="ask-hint"
           placeholder={isLive ? "Which resort had the coldest storm days?" : "Your own questions need an Anthropic key"}
-          className="h-10 min-w-0 flex-1 rounded-md border border-border bg-bg px-3 text-sm disabled:cursor-not-allowed disabled:opacity-70"
+          className="h-10 min-w-0 shrink-0 rounded-md border border-border bg-bg px-3 text-sm disabled:cursor-not-allowed disabled:opacity-70 sm:flex-1"
         />
         {isLive ? (
           <button

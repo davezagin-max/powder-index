@@ -63,7 +63,6 @@ function BarRows({ model }: { model: BarModel }) {
   const zero = position(0);
   return (
     <div className="flex flex-col gap-1.5">
-      <p className="text-xs text-muted">{model.yLabel}</p>
       <ul className="grid grid-cols-[fit-content(42%)_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 text-sm">
         {model.categories.map((category, index) => {
           const value = values[index];
@@ -331,14 +330,11 @@ export function ResultChart({ model }: { model: Exclude<ChartModel, { kind: "tab
         : null;
   return (
     <div ref={ref} className="w-full min-w-0 overflow-hidden">
+      {/* The measure, in the query's own column name: the y axis of every chart type. */}
+      <p className="mb-1.5 text-xs text-muted">{model.yLabel}</p>
       {model.kind === "bar" && (model.series.length === 1 ? <BarRows model={model} /> : <GroupedBars model={model} width={width} />)}
       {model.kind === "line" && <Lines model={model} width={width} />}
-      {model.kind === "scatter" && (
-        <>
-          <p className="mb-1 text-xs text-muted">{model.yLabel}</p>
-          <Scatter model={model} width={width} />
-        </>
-      )}
+      {model.kind === "scatter" && <Scatter model={model} width={width} />}
       {folded && <p className="mt-2 text-xs text-muted">{folded}</p>}
     </div>
   );

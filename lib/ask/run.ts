@@ -107,7 +107,11 @@ export async function runAsk(question: string, demoId: string | undefined, deps:
   // Live: the model writes SQL; a DuckDB error goes back to it, at most twice.
   const attempts: AskRequest["attempts"] = [];
   let meta: ApiMeta | null = null;
-  let trail: TrailStep[] = [];
+  // Every failed attempt, in the order it happened. Each request is a fresh conversation
+  // on the server, so its trail holds the engine failures this loop sent it followed by
+  // whatever the validator turned down this time. Only that second part is new; keeping
+  // our own list means a validator rejection from an earlier request is not forgotten.
+  const trail: TrailStep[] = [];
   for (;;) {
     deps.onPhase?.({ phase: "asking", attempt: attempts.length + 1 });
     const response = await deps.post({ ...(demoId ? { demoId } : {}), question, attempts }, signal);
@@ -122,7 +126,7 @@ export async function runAsk(question: string, demoId: string | undefined, deps:
       return { status: "error", kind: "server", message: "The server sent an answer this page does not understand.", meta };
     }
     const data = parsed.data;
-    trail = data.trail;
+    trail.push(...data.trail.slice(attempts.length));
     if (data.kind === "declined") return { status: "declined", data, trail, meta: meta ?? NO_META };
     if (data.kind === "rejected" || !data.sql) {
       return { status: "failed", reason: data.reason ?? "The query was rejected.", trail, meta };
@@ -136,12 +140,12 @@ export async function runAsk(question: string, demoId: string | undefined, deps:
     } catch (error) {
       if (signal.aborted) return { status: "cancelled" };
       const message = engineMessage(error);
-      const failed: TrailStep = { sql: data.sql, error: message, stage: "engine" };
+      trail.push({ sql: data.sql, error: message, stage: "engine" });
       if (attempts.length >= MAX_ENGINE_RETRIES) {
         return {
           status: "failed",
           reason: `DuckDB rejected the query ${attempts.length + 1} times. Try rephrasing the question.`,
-          trail: [...trail, failed],
+          trail,
           meta,
         };
       }

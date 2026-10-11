@@ -22,6 +22,7 @@ and rejects everything else. It works on sqlglot's syntax tree, never on the tex
    Comments are gone, strings are re-quoted, and the regenerated text is parsed and
    checked a second time. What the browser runs is exactly what was validated, so a
    difference between how sqlglot and DuckDB read some odd token cannot be exploited.
+   The output is also a fixed point: validating it again returns the identical text.
 
 Column names are deliberately not checked here. A wrong column is a correctness
 problem, not a safety problem; DuckDB reports it in the browser and the error is sent
@@ -445,12 +446,24 @@ def validate_sql(
         except SqlglotError:
             raise SqlRejected("construct", "The SQL uses syntax DuckDB does not support.") from None
 
-        # Second pass, on the text that will actually run.
+        # Second pass, on the text that will actually run. It must also be a fixed point:
+        # validating the output again has to give back the same text, byte for byte. That
+        # is what lets a stored answer (a demo fixture, or a failed attempt the browser
+        # sends back) be re-checked later and compared with what was first approved.
         again = _parse(safe_sql)
         _check_tree(again, tables)
         final_limit, changed_again = _enforce_limit(again, max_rows)
-        if changed_again or final_limit != limit:
-            raise SqlRejected("construct", "The SQL did not survive regeneration unchanged.")
+        try:
+            stable = again.sql(
+                dialect=DIALECT, pretty=True, comments=False, unsupported_level=ErrorLevel.RAISE
+            )
+        except SqlglotError:
+            stable = None
+        if changed_again or final_limit != limit or stable != safe_sql:
+            raise SqlRejected(
+                "construct",
+                "The SQL did not survive regeneration unchanged. Write it more plainly.",
+            )
     except RecursionError:
         raise SqlRejected("too_complex", "The SQL is nested too deeply.") from None
     return ValidatedQuery(

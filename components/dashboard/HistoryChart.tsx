@@ -93,7 +93,8 @@ export function HistoryChart({
         {months.map(({ date, i }) => (
           <g key={date}>
             <line x1={x(i)} x2={x(i)} y1={TITLE} y2={plotBottom} stroke="var(--grid)" strokeWidth={1} />
-            {(step * 30 > 34 || Number(date.slice(5, 7)) % 2 === 0) && (
+            {/* Every month when there is room, every other one when not, and never one cut off by the edge. */}
+            {(step * 30 > 34 || Number(date.slice(5, 7)) % 2 === 0) && x(i) + 28 <= width && (
               <text x={x(i) + 3} y={plotBottom + 14} className="chart-text">
                 {formatDate(date, date.slice(5, 7) === "01" ? "monthYear" : "month")}
               </text>
@@ -166,7 +167,7 @@ export function HistoryChart({
         </dl>
       </div>
       {/* Reserve room for the readout so it never covers what follows. */}
-      <div style={{ height: 84 }} />
+      <div style={{ height: 94 }} />
     </div>
   );
 }
