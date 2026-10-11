@@ -195,7 +195,9 @@ export function AskPanel({ dataUrl }: { dataUrl: string }) {
     if (controller.current !== mine || outcome.status === "cancelled") return;
     controller.current = null;
     setRun({ state: "done", question: text, outcome });
-    resultRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    // Bring the answer to the top of the screen: the chart is the point, and "nearest"
+    // would leave only its title peeking in at the bottom.
+    resultRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
   const busy = run.state === "busy";
@@ -333,7 +335,7 @@ export function AskPanel({ dataUrl }: { dataUrl: string }) {
                 <p className="min-w-0 flex-1">
                   <span className="font-medium">
                     {outcome.kind === "refusal"
-                      ? "Claude declined. "
+                      ? "" // the server's message already opens with "Claude declined this request"
                       : outcome.kind === "auth"
                         ? "Key problem. "
                         : outcome.kind === "rate_limit"

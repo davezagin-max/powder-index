@@ -110,13 +110,16 @@ export function layoutLineage(nodes: LineageNode[], allEdges: LineageEdge[]): Li
     const label = (slot: Slot): string =>
       "pass" in slot ? `${name.get(edges[slot.pass].to)} ${name.get(edges[slot.pass].from)}` : slot.node.name;
     const rank = (slot: Slot): number => ("pass" in slot ? 2 : slot.node.layer === "source" ? 0 : 1);
+    // Of two lanes leaving the same node, the one that ends sooner goes on top, so the
+    // longer one does not have to cross it on the way to its own target.
+    const reach = (slot: Slot): number => ("pass" in slot ? column.get(edges[slot.pass].to)! : 0);
     const centers = new Map(slots[c].map((slot) => [slot, center(slot)]));
     slots[c].sort((a, b) => {
       const ca = centers.get(a)!;
       const cb = centers.get(b)!;
       // Infinity - Infinity is NaN, so compare before subtracting.
       if (ca !== cb) return ca < cb ? -1 : 1;
-      return rank(a) - rank(b) || label(a).localeCompare(label(b));
+      return rank(a) - rank(b) || reach(a) - reach(b) || label(a).localeCompare(label(b));
     });
     slots[c].forEach((slot, row) => {
       if ("pass" in slot) {
