@@ -5,9 +5,17 @@
  * values rather than a second set of styles.
  *
  * Identity: snow white and glacier blue. Chart colors are separate from brand colors
- * on purpose. The eight series colors are a categorical palette checked for
- * color-vision-deficiency separation in this order, in both modes, against these
- * surfaces; tiers are a single-hue ramp because they are ordered.
+ * on purpose, and both sets were measured rather than eyeballed, in each mode, against
+ * the surfaces they are drawn on (--surface and --land):
+ *
+ *   --s1..--s8  A categorical palette in a fixed order. Neighbors in that order stay
+ *               apart under simulated protanopia and deuteranopia (OKLab distance of 8
+ *               or more) and in normal vision. In light mode three of them (green,
+ *               amber, pink) sit under 3:1 contrast with the card, so color is never
+ *               the only cue: every chart has a legend, printed values, and a table view.
+ *   --tier-*    One hue from light to dark, because tiers are ordered. Steps are evenly
+ *               spaced in lightness and the faintest one ("off") still clears 2:1
+ *               against the surface, so an off-season map does not fade away.
  */
 :root {
   --bg: #f4f8fb;
@@ -37,11 +45,11 @@
   --s8: #e34948;
   --s-other: #9aacba;
 
-  --tier-off: #c3d2dd;
-  --tier-firm: #86b6ef;
-  --tier-soft: #5598e7;
-  --tier-powder: #256abf;
-  --tier-epic: #0d366b;
+  --tier-off: #9db4c8;
+  --tier-firm: #5f99e6;
+  --tier-soft: #3a7dd6;
+  --tier-powder: #1d58aa;
+  --tier-epic: #0b2f5e;
 
   --water: #d3e6f3;
   --land: #fbfdfe;
@@ -76,11 +84,11 @@
   --s8: #e66767;
   --s-other: #5d7284;
 
-  --tier-off: #2b3d4c;
-  --tier-firm: #184f95;
-  --tier-soft: #256abf;
-  --tier-powder: #3987e5;
-  --tier-epic: #9ec5f4;
+  --tier-off: #3f5366;
+  --tier-firm: #2f6dc2;
+  --tier-soft: #4a90e8;
+  --tier-powder: #7db2f2;
+  --tier-epic: #c2dcfa;
 
   --water: #12293a;
   --land: #0d1822;
