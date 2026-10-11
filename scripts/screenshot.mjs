@@ -10,7 +10,7 @@
  *       { "name": "hero", "path": "/", "theme": "light", "viewport": "desktop",
  *         "actions": [{ "click": "text=Run" }, { "waitFor": "#result" }, { "wait": 400 }] }
  *     ],
- *     "gif": { "path": "/", "theme": "dark", "actions": [ ... ] }
+ *     "gif": { "path": "/", "theme": "dark", "actions": [ ... ], "fps": 12, "width": 800, "colors": 128 }
  *   }
  * Actions: click, fill ([selector, text]), press, hover, waitFor (selector), wait (ms), scroll (px).
  * Output goes to docs/<name>.png and docs/demo.gif. The GIF needs ffmpeg on PATH.
@@ -111,7 +111,7 @@ try {
     try {
       execFileSync(
         "ffmpeg",
-        ["-y", "-i", video, "-vf", "fps=12,scale=800:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=bayer", gif],
+        ["-y", "-i", video, "-vf", `fps=${config.gif.fps ?? 12},scale=${config.gif.width ?? 800}:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=${config.gif.colors ?? 128}[p];[b][p]paletteuse=dither=bayer`, gif],
         { stdio: "ignore" },
       );
       console.log(`wrote ${gif}`);

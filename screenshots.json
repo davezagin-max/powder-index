@@ -1,28 +1,186 @@
 {
   "port": 3240,
   "shots": [
-    { "name": "hero", "path": "/?date=2026-02-19&resort=snowbird", "theme": "light", "viewport": "desktop", "actions": [{ "wait": 600 }] },
-    { "name": "hero-dark", "path": "/?date=2026-02-19&resort=snowbird", "theme": "dark", "viewport": "desktop", "actions": [{ "wait": 600 }] },
-    { "name": "mobile", "path": "/?date=2026-02-19", "theme": "dark", "viewport": "mobile", "actions": [{ "wait": 600 }] },
-    { "name": "off-season", "path": "/", "theme": "light", "viewport": "desktop", "actions": [{ "wait": 600 }] },
-    { "name": "ask", "path": "/?date=2026-02-19", "theme": "light", "viewport": "desktop", "actions": [{ "click": "text=How did the snowpack build at Alta, Snowbird and Brighton over the winter?" }, { "waitFor": "#ask figure figcaption h3" }, { "wait": 500 }] },
-    { "name": "ask-retry-trail", "path": "/?date=2026-02-19", "theme": "dark", "viewport": "desktop", "actions": [{ "click": "text=How many powder days did each resort have last season?" }, { "waitFor": "#ask figure figcaption h3" }, { "wait": 500 }] },
-    { "name": "full-page", "path": "/?date=2026-02-19&resort=snowbird", "theme": "light", "viewport": "desktop", "fullPage": true, "actions": [{ "click": "text=How much snow fell each month in the Cottonwood canyons?" }, { "waitFor": "#ask figure figcaption h3" }, { "wait": 500 }] }
+    {
+      "name": "hero",
+      "path": "/?date=2026-02-19&resort=snowbird",
+      "theme": "light",
+      "viewport": "desktop",
+      "actions": [
+        {
+          "wait": 600
+        }
+      ]
+    },
+    {
+      "name": "hero-dark",
+      "path": "/?date=2026-02-19&resort=snowbird",
+      "theme": "dark",
+      "viewport": "desktop",
+      "actions": [
+        {
+          "wait": 600
+        }
+      ]
+    },
+    {
+      "name": "mobile",
+      "path": "/?date=2026-02-19",
+      "theme": "dark",
+      "viewport": "mobile",
+      "actions": [
+        {
+          "wait": 600
+        }
+      ]
+    },
+    {
+      "name": "mobile-ask",
+      "path": "/?date=2026-02-19",
+      "theme": "light",
+      "viewport": "mobile",
+      "actions": [
+        {
+          "click": "text=How much snow fell each month in the Cottonwood canyons?"
+        },
+        {
+          "waitFor": "#ask figure figcaption h3"
+        },
+        {
+          "wait": 500
+        }
+      ]
+    },
+    {
+      "name": "off-season",
+      "path": "/",
+      "theme": "light",
+      "viewport": "desktop",
+      "actions": [
+        {
+          "wait": 600
+        }
+      ]
+    },
+    {
+      "name": "history",
+      "path": "/?date=2026-02-19&resort=snowbird",
+      "theme": "light",
+      "viewport": "desktop",
+      "actions": [
+        {
+          "click": "header a[href='#resort']"
+        },
+        {
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "ask",
+      "path": "/?date=2026-02-19",
+      "theme": "light",
+      "viewport": "desktop",
+      "actions": [
+        {
+          "click": "text=How did the snowpack build at Alta, Snowbird and Brighton over the winter?"
+        },
+        {
+          "waitFor": "#ask figure figcaption h3"
+        },
+        {
+          "wait": 500
+        }
+      ]
+    },
+    {
+      "name": "ask-retry-trail",
+      "path": "/?date=2026-02-19",
+      "theme": "dark",
+      "viewport": "desktop",
+      "actions": [
+        {
+          "click": "text=How many powder days did each resort have last season?"
+        },
+        {
+          "waitFor": "#ask figure figcaption h3"
+        },
+        {
+          "wait": 500
+        }
+      ]
+    },
+    {
+      "name": "how-it-works",
+      "path": "/?date=2026-02-19",
+      "theme": "light",
+      "viewport": "desktop",
+      "actions": [
+        {
+          "click": "header a[href='#how']"
+        },
+        {
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "lineage",
+      "path": "/?date=2026-02-19",
+      "theme": "dark",
+      "viewport": "desktop",
+      "actions": [
+        {
+          "click": "header a[href='#how']"
+        },
+        {
+          "wait": 400
+        },
+        {
+          "scroll": 760
+        },
+        {
+          "wait": 600
+        }
+      ]
+    }
   ],
   "gif": {
     "path": "/",
     "theme": "light",
     "actions": [
-      { "wait": 1200 },
-      { "click": "text=Replay Feb 19" },
-      { "wait": 1600 },
-      { "click": "#ranking li:nth-child(2) button" },
-      { "wait": 1000 },
-      { "click": "header a[href='#ask']" },
-      { "wait": 1400 },
-      { "click": "text=How did the snowpack build at Alta, Snowbird and Brighton over the winter?" },
-      { "waitFor": "#ask figure figcaption h3" },
-      { "wait": 2600 }
-    ]
+      {
+        "wait": 1200
+      },
+      {
+        "click": "text=Replay Feb 19"
+      },
+      {
+        "wait": 1600
+      },
+      {
+        "click": "#ranking li:nth-child(2) button"
+      },
+      {
+        "wait": 1000
+      },
+      {
+        "click": "header a[href='#ask']"
+      },
+      {
+        "wait": 1400
+      },
+      {
+        "click": "text=How did the snowpack build at Alta, Snowbird and Brighton over the winter?"
+      },
+      {
+        "waitFor": "#ask figure figcaption h3"
+      },
+      {
+        "wait": 2600
+      }
+    ],
+    "fps": 10,
+    "colors": 96
   }
 }
