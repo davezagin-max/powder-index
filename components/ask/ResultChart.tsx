@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useWidth } from "@/components/chart/useWidth";
-import type { ChartModel, Series } from "@/lib/chart/model";
+import { readableColumn, type ChartModel, type Series } from "@/lib/chart/model";
 import { extent, fitBandLabels, formatNumber, linePath, linear, niceTicks } from "@/lib/chart/scale";
 import { formatDate, toIso } from "@/lib/data/dates";
 import { OTHER_COLOR, SERIES_COLORS } from "@/lib/ui/colors";
@@ -113,7 +113,7 @@ function GroupedBars({ model, width }: { model: BarModel; width: number }) {
   return (
     <>
       <Legend series={model.series} mark="box" />
-      <svg width={width} height={height} role="img" aria-label={`Grouped bar chart of ${model.yLabel} by ${model.xLabel}. The table view has the same numbers.`} className="block">
+      <svg width={width} height={height} role="img" aria-label={`Grouped bar chart of ${readableColumn(model.yLabel)} by ${readableColumn(model.xLabel)}. The table view has the same numbers.`} className="block">
         {ticks.map((tick) => (
           <g key={tick}>
             <line x1={margin.left} x2={width - margin.right} y1={y(tick)} y2={y(tick)} stroke={tick === 0 ? "var(--axis)" : "var(--grid)"} strokeWidth={1} />
@@ -184,7 +184,7 @@ function Lines({ model, width }: { model: LineModel; width: number }) {
     <>
       <Legend series={model.series} mark="line" />
       <div className="relative">
-        <svg width={width} height={height} role="img" aria-label={`Line chart of ${model.yLabel} over ${model.xLabel}. The table view has the same numbers.`} className="block">
+        <svg width={width} height={height} role="img" aria-label={`Line chart of ${readableColumn(model.yLabel)} over ${readableColumn(model.xLabel)}. The table view has the same numbers.`} className="block">
           {ticks.map((tick) => (
             <g key={tick}>
               <line x1={margin.left} x2={width - margin.right} y1={y(tick)} y2={y(tick)} stroke={tick === 0 ? "var(--axis)" : "var(--grid)"} strokeWidth={1} />
@@ -235,7 +235,7 @@ function Lines({ model, width }: { model: LineModel; width: number }) {
                 <li key={series.name} className="flex items-center gap-2">
                   <span className="h-0.5 w-3 shrink-0 rounded-full" style={{ background: colorOf(series, s) }} />
                   <span className="font-semibold">{series.values[hover] === null ? "–" : formatNumber(series.values[hover]!)}</span>
-                  <span className="truncate text-muted">{series.name || model.yLabel}</span>
+                  <span className="truncate text-muted">{series.name || readableColumn(model.yLabel)}</span>
                 </li>
               ))}
             </ul>
@@ -281,7 +281,7 @@ function Scatter({ model, width }: { model: ScatterModel; width: number }) {
 
   return (
     <div className="relative">
-      <svg width={width} height={height} role="img" aria-label={`Scatter plot of ${model.yLabel} against ${model.xLabel}, ${model.points.length} points. The table view has the same numbers.`} className="block">
+      <svg width={width} height={height} role="img" aria-label={`Scatter plot of ${readableColumn(model.yLabel)} against ${readableColumn(model.xLabel)}, ${model.points.length} points. The table view has the same numbers.`} className="block">
         {yTicks.map((tick) => (
           <g key={tick}>
             <line x1={margin.left} x2={width - margin.right} y1={y(tick)} y2={y(tick)} stroke={tick === 0 ? "var(--axis)" : "var(--grid)"} strokeWidth={1} />
@@ -296,7 +296,7 @@ function Scatter({ model, width }: { model: ScatterModel; width: number }) {
           </text>
         ))}
         <text x={(margin.left + width - margin.right) / 2} y={height - 6} textAnchor="middle" className="chart-text">
-          {model.xLabel}
+          {readableColumn(model.xLabel)}
         </text>
         {model.points.map((point, i) => (
           <circle key={i} cx={x(point.x)} cy={y(point.y)} r={4} fill="var(--s1)" fillOpacity={0.8} stroke="var(--surface)" strokeWidth={1.5} />
@@ -308,9 +308,9 @@ function Scatter({ model, width }: { model: ScatterModel; width: number }) {
         <Tip left={x(active.x)} top={Math.max(y(active.y) - 64, 0)} width={width}>
           {active.label && <p className="truncate font-medium">{active.label}</p>}
           <dl className="tabular mt-0.5 grid grid-cols-[auto_1fr] gap-x-2 text-muted">
-            <dt className="truncate">{model.yLabel}</dt>
+            <dt className="truncate">{readableColumn(model.yLabel)}</dt>
             <dd className="text-right font-semibold text-fg">{formatNumber(active.y)}</dd>
-            <dt className="truncate">{model.xLabel}</dt>
+            <dt className="truncate">{readableColumn(model.xLabel)}</dt>
             <dd className="text-right font-semibold text-fg">{axisLabel(model, active.x)}</dd>
           </dl>
         </Tip>
@@ -334,8 +334,10 @@ export function ResultChart({ model }: { model: Exclude<ChartModel, { kind: "tab
         : null;
   return (
     <div ref={ref} className="w-full min-w-0 overflow-hidden">
-      {/* The measure, in the query's own column name: the y axis of every chart type. */}
-      <p className="mb-1.5 text-xs text-muted">{model.yLabel}</p>
+      {/* The measure: the y axis of every chart type, named in words, with the query's column name on hover. */}
+      <p className="mb-1.5 text-xs text-muted" title={model.yLabel}>
+        {readableColumn(model.yLabel)}
+      </p>
       {model.kind === "bar" && (model.series.length === 1 ? <BarRows model={model} /> : <GroupedBars model={model} width={width} />)}
       {model.kind === "line" && <Lines model={model} width={width} />}
       {model.kind === "scatter" && <Scatter model={model} width={width} />}

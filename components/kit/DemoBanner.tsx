@@ -17,12 +17,12 @@ export function DemoBanner({ placeholder = false, aiRequired = true }: DemoBanne
 
   if (isLive) {
     return (
-      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-border bg-surface px-4 py-2 text-sm">
+      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-border bg-surface-2/70 px-4 py-1.5 text-xs text-muted">
         <span className="inline-flex items-center gap-2">
           <span aria-hidden className="size-2 rounded-full bg-success" />
-          Live. Your questions go to Claude Opus 5.5 with your key.
+          Live: your questions go to Claude Opus 5.5 with your key.
         </span>
-        <button type="button" onClick={openKeyModal} className="underline underline-offset-2">
+        <button type="button" onClick={openKeyModal} className="font-medium text-fg underline underline-offset-2">
           Change key
         </button>
       </div>
@@ -31,19 +31,18 @@ export function DemoBanner({ placeholder = false, aiRequired = true }: DemoBanne
 
   // The dashboard itself needs no key and shows real pipeline data either way. Only
   // "Ask the data" changes: presets replay bundled answers, and the wording says which kind.
-  const short = placeholder
-    ? "Demo mode: real snow data, sample answers for the preset questions."
-    : "Demo mode: real snow data, recorded Claude answers for the preset questions.";
+  // One calm line: it is a note about the demo, not a warning.
+  const short = placeholder ? "Demo: real snow data, pre-written AI answers." : "Demo: real snow data, recorded AI answers.";
   const message = !aiRequired
     ? "Everything here works without a key. Add one to turn on the Claude Opus 5.5 features."
     : placeholder
-      ? "Demo mode. The snow data is real; the preset questions show sample SQL until a real Claude Opus 5.5 run is recorded. Add your key to ask your own."
-      : "Demo mode. The snow data is real, and the preset questions replay recorded Claude Opus 5.5 answers. Add your key to ask your own.";
+      ? "Demo: the snow data is real; the AI answers are pre-written examples. Add your Anthropic API key to run it live."
+      : "Demo: the snow data is real; the AI answers replay recorded Claude Opus 5.5 runs. Add your Anthropic API key to ask your own.";
 
   return (
     <div
       role="status"
-      className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-border bg-surface px-4 py-2 text-sm"
+      className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-border bg-surface-2/70 px-4 py-1.5 text-xs text-muted"
     >
       {aiRequired ? (
         <>
@@ -56,7 +55,7 @@ export function DemoBanner({ placeholder = false, aiRequired = true }: DemoBanne
       <button
         type="button"
         onClick={openKeyModal}
-        className="rounded-md bg-accent px-2.5 py-1 text-xs font-medium text-accent-fg hover:opacity-90"
+        className="rounded border border-border bg-surface px-2 py-0.5 font-medium text-fg hover:border-accent"
       >
         Add key
       </button>

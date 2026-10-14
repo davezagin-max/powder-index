@@ -25,9 +25,23 @@ export function ScoreBar({ components, height = 10 }: { components: ComponentPoi
 }
 
 /** Color key for the score components. Always shown beside any stacked bar. */
-export function ScoreLegend({ labels, className = "" }: { labels: { key: ComponentPoints["key"]; label: string }[]; className?: string }) {
+export function ScoreLegend({
+  labels,
+  lead,
+  className = "",
+}: {
+  labels: { key: ComponentPoints["key"]; label: string }[];
+  /** A short label read before the keys, such as "Points from". */
+  lead?: string;
+  className?: string;
+}) {
   return (
-    <ul className={`flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted ${className}`}>
+    <ul aria-label={lead} className={`flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted ${className}`}>
+      {lead && (
+        <li aria-hidden className="font-medium text-fg">
+          {lead}
+        </li>
+      )}
       {labels.map((item) => (
         <li key={item.key} className="inline-flex items-center gap-1.5">
           <span aria-hidden className="size-2.5 rounded-[2px]" style={{ background: COMPONENT_COLOR[item.key] }} />

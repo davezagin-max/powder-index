@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 import { CostMeter } from "@/components/kit/CostMeter";
 import { useKey } from "@/components/kit/KeyProvider";
 import { ASK_FIXTURES, ASK_HAS_PLACEHOLDERS, PRESETS } from "@/lib/ask/presets";
@@ -27,8 +27,8 @@ const STAGE_TEXT = {
 } as const;
 
 function statusFor(phase: AskPhase | EngineStage, live: boolean): string {
-  if (phase === "engine") return "Starting DuckDB in your browser (about 7 MB the first time)…";
-  if (phase === "data") return "Loading the snow tables…";
+  if (phase === "engine") return "Starting the database engine in your browser (about 7 MB the first time)…";
+  if (phase === "data") return "Loading the snow data…";
   switch (phase.phase) {
     case "asking":
       return phase.attempt === 1
@@ -151,11 +151,16 @@ function Answer({ outcome }: { outcome: Extract<Finished, { status: "answered" }
   );
 }
 
+/** Lets the intro at the top of the page start a preset question from the first screen. */
+export interface AskPanelHandle {
+  askPreset: (presetId: string) => void;
+}
+
 /**
  * Question in, SQL and a chart out. With no key the presets replay bundled answers
  * entirely in the browser. With a key the question goes to Claude through /api/ask.
  */
-export function AskPanel({ dataUrl }: { dataUrl: string }) {
+export function AskPanel({ dataUrl, ref }: { dataUrl: string; ref?: Ref<AskPanelHandle> }) {
   const { apiKey, isLive, openKeyModal } = useKey();
   const [run, setRun] = useState<Run>({ state: "idle" });
   const [question, setQuestion] = useState("");
@@ -203,19 +208,31 @@ export function AskPanel({ dataUrl }: { dataUrl: string }) {
     resultRef.current?.scrollIntoView({ block: "start", behavior: calm ? "auto" : "smooth" });
   }
 
+  const sectionRef = useRef<HTMLElement>(null);
+  useImperativeHandle(ref, () => ({
+    askPreset(presetId: string) {
+      const preset = PRESETS.find((p) => p.id === presetId);
+      if (!preset) return;
+      const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      sectionRef.current?.scrollIntoView({ block: "start", behavior: calm ? "auto" : "smooth" });
+      void ask(preset.question, preset.id);
+    },
+  }));
+
   const busy = run.state === "busy";
   const outcome = run.state === "done" ? run.outcome : null;
   const meta = outcome && "meta" in outcome ? outcome.meta : null;
 
   return (
-    <section id="ask" aria-labelledby="ask-heading" className="rounded-lg border border-border bg-surface p-4 sm:p-6">
+    <section ref={sectionRef} id="ask" aria-labelledby="ask-heading" className="scroll-mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
       <div className="max-w-3xl">
         <h2 id="ask-heading" className="text-xl font-semibold tracking-tight">
           Ask the data
         </h2>
         <p className="mt-1 text-sm text-muted">
-          A question becomes one SQL query. Claude Opus 5.5 writes it, a sqlglot firewall decides whether it may run,
-          and DuckDB runs it here in your browser. Claude never sees a row and never states a number.
+          Ask about last winter in plain English. Claude Opus 5.5 turns the question into a database query (SQL), a
+          safety check decides whether it may run, and your browser runs it on the real snow data. Claude never sees
+          a row, so every number in the answer is computed from the data, not written by the AI.
         </p>
       </div>
 
@@ -224,8 +241,8 @@ export function AskPanel({ dataUrl }: { dataUrl: string }) {
           {isLive
             ? "Try one"
             : ASK_HAS_PLACEHOLDERS
-              ? "Preset questions (sample answers, no key needed)"
-              : "Preset questions (recorded answers, no key needed)"}
+              ? "Pick a question (no key needed; the AI answers are pre-written examples)"
+              : "Pick a question (no key needed; replays a recorded Claude answer)"}
         </p>
         <ul aria-labelledby="preset-label" className="flex flex-wrap gap-2">
           {PRESETS.map((preset) => (
@@ -292,7 +309,7 @@ export function AskPanel({ dataUrl }: { dataUrl: string }) {
 
       <div ref={resultRef} aria-live="polite" className="mt-5 min-h-16 scroll-mt-4 border-t border-border pt-5">
         {run.state === "idle" && (
-          <p className="text-sm text-muted">Pick a question to see the SQL, the chart, and the rows behind it.</p>
+          <p className="text-sm text-muted">Pick a question above to see the chart, the rows behind it, and the SQL that produced them.</p>
         )}
 
         {run.state === "busy" && (

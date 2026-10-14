@@ -16,6 +16,31 @@ export const MAX_BARS = 60;
 export const MAX_POINTS = 3000;
 const OTHER = "Other";
 
+const UNIT_SUFFIX: [RegExp, string][] = [
+  [/_in$/, " (inches)"],
+  [/_pct$/, " (%)"],
+  [/_f$/, " (°F)"],
+];
+
+/**
+ * A column name as a reader would say it: `season_snowfall_in` becomes "Season snowfall
+ * (inches)". Display only; the SQL under every chart keeps the real name.
+ */
+export function readableColumn(name: string): string {
+  let unit = "";
+  let base = name;
+  for (const [pattern, label] of UNIT_SUFFIX) {
+    if (pattern.test(base)) {
+      base = base.replace(pattern, "");
+      unit = label;
+      break;
+    }
+  }
+  const words = base.replace(/_+/g, " ").replace(/(\d+)h\b/g, "$1 h").trim();
+  if (!words) return name;
+  return words.charAt(0).toUpperCase() + words.slice(1) + unit;
+}
+
 export interface Series {
   name: string;
   /** y per x position; null where this series has no row. */

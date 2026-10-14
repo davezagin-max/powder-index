@@ -74,8 +74,8 @@ export function RankingCard({
 
       <div className="flex items-end justify-between gap-3">
         <dl className="grid grid-cols-3 gap-x-4">
-          <Stat label="24 h" value={inches(day.new24)} unit="″" />
-          <Stat label="72 h" value={inches(day.new72)} unit="″" />
+          <Stat label="New, 24 h" value={inches(day.new24)} unit="″" />
+          <Stat label="New, 72 h" value={inches(day.new72)} unit="″" />
           <Stat label="Base" value={inches(day.depth)} unit="″" />
         </dl>
         {day.forecast ? (

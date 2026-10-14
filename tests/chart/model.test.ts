@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_SERIES, buildChartModel } from "@/lib/chart/model";
+import { MAX_SERIES, buildChartModel, readableColumn } from "@/lib/chart/model";
 import type { Cell, Column, QueryResult } from "@/lib/duck/result";
 
 function result(columns: Column[], rows: Cell[][]): QueryResult {
@@ -184,5 +184,20 @@ describe("falling back to a table", () => {
       kind: "table",
       reason: "Every row has an empty x or y value.",
     });
+  });
+});
+
+describe("readableColumn", () => {
+  it("names the measure in words, with its unit", () => {
+    expect(readableColumn("season_snowfall_in")).toBe("Season snowfall (inches)");
+    expect(readableColumn("density_24h_pct")).toBe("Density 24 h (%)");
+    expect(readableColumn("temp_avg_72h_f")).toBe("Temp avg 72 h (°F)");
+    expect(readableColumn("new_snow_24h_in")).toBe("New snow 24 h (inches)");
+  });
+
+  it("leaves unit-less names as words and never returns an empty label", () => {
+    expect(readableColumn("powder_days")).toBe("Powder days");
+    expect(readableColumn("month")).toBe("Month");
+    expect(readableColumn("_in")).toBe("_in");
   });
 });

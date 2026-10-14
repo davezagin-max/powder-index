@@ -95,7 +95,7 @@ export function DateBar({
       {data.bestDays.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <p id="best-days-label" className="text-xs text-muted">
-            Jump to a powder day{season ? ` from winter ${seasonLabel(season)}` : ""}
+            Replay a big snow day{season ? ` of winter ${seasonLabel(season)}` : ""}, with the top resort and its score
           </p>
           <ul aria-labelledby="best-days-label" className="flex flex-wrap gap-2">
             {data.bestDays.map((day) => {
