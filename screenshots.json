@@ -5,7 +5,10 @@
       "name": "hero",
       "path": "/?date=2026-02-19&resort=snowbird",
       "theme": "light",
-      "viewport": "desktop",
+      "viewport": {
+        "width": 1280,
+        "height": 960
+      },
       "actions": [
         {
           "wait": 600
@@ -136,37 +139,37 @@
     "theme": "light",
     "actions": [
       {
-        "wait": 1200
+        "wait": 1800
       },
       {
-        "click": "text=Replay Feb 19"
+        "hover": "text=Replay the best day of last winter"
       },
       {
-        "wait": 1600
+        "wait": 500
       },
       {
-        "click": "#ranking li:nth-child(2) button"
+        "click": "text=Replay the best day of last winter"
       },
       {
-        "wait": 1000
+        "wait": 2200
       },
       {
-        "click": "header a[href='#ask']"
+        "hover": "section[aria-labelledby=intro-heading] button:has-text('Ask the data')"
       },
       {
-        "wait": 1400
+        "wait": 500
       },
       {
-        "click": "text=How did the snowpack build at Alta, Snowbird and Brighton over the winter?"
+        "click": "section[aria-labelledby=intro-heading] button:has-text('Ask the data')"
       },
       {
         "waitFor": "#ask figure figcaption h3"
       },
       {
-        "wait": 2600
+        "wait": 2800
       }
     ],
-    "fps": 10,
-    "colors": 96
+    "fps": 6,
+    "colors": 64
   }
 }

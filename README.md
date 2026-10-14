@@ -1,27 +1,41 @@
 # Powder Index
 
-> An end-to-end data pipeline that turns public snowpack and forecast data into a daily powder ranking for twelve Utah ski resorts, with an AI analyst you can ask in plain English.
+> Which Utah ski resort has the best fresh snow? Powder Index ranks twelve resorts every day with a score from 0 to 100, built from public weather-station data, and lets you ask the data questions in plain English.
 
 [![CI](https://github.com/davezagin-max/powder-index/actions/workflows/ci.yml/badge.svg)](https://github.com/davezagin-max/powder-index/actions/workflows/ci.yml)
 [![Pipeline](https://github.com/davezagin-max/powder-index/actions/workflows/pipeline.yml/badge.svg)](https://github.com/davezagin-max/powder-index/actions/workflows/pipeline.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Live demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://powder-index.vercel.app)
+[![Live demo: coming soon](https://img.shields.io/badge/live%20demo-coming%20soon-lightgrey.svg)](#run-locally)
 
-![Powder Index replaying 19 February 2026: Snowbird ranked first with 33 inches overnight, each score split into its components, and a map of the resorts](docs/hero.png)
+![Powder Index replaying 19 February 2026: the headline question, the two demo buttons, and the resort ranking with Snowbird first at 91 out of 100](docs/hero.png)
 
-## Try it in 10 seconds
+*Replaying 19 February 2026, the best day of last winter: Snowbird ranks first with 33 inches of new snow, each colored bar shows where a resort's points came from, and the map shows where the resorts are.*
 
-**[Open the live demo](https://powder-index.vercel.app)**: no key, no sign-up. The page opens on the latest morning report, which in October is an off-season one. Click **Replay Feb 19: 33″ overnight** (or the **Feb 19** chip above it) to jump to the best day of last winter, click a resort card to see how its score adds up, then scroll to **Ask the data** and pick a question. The SQL runs in your browser, in DuckDB-WASM, against the same Parquet files the pipeline publishes.
+## What it does
 
-![Replaying the best day of last winter, opening a resort, and asking the data a question](docs/demo.gif)
+- **Ranks Utah ski resorts by fresh snow, every day.** Each of twelve resorts gets a score from 0 to 100, mostly for new snow in the last one to three days, plus points for light, cold snow, a deep base, and the forecast.
+- **Runs on real public data.** A daily data pipeline (Python, dbt, DuckDB) pulls snow readings from USDA weather stations and the National Weather Service forecast, and publishes the results as files. No server, no database to keep running.
+- **Replays any day of last winter,** with one click to the biggest snow days, so the page is interesting even in the off-season.
+- **Answers questions in plain English.** Claude Opus 5.5 turns a question into a database query (SQL), a safety check approves it, and your browser runs it on the real data and draws the chart. The AI never sees the data and never states a number.
 
-Demo data in this commit is hand-written sample output; `pnpm record` replaces it with real Claude Opus 5.5 runs.
+## Try it
 
-What that means exactly:
+The live demo is coming soon. Until then it runs locally in demo mode, with no API key (needs Node and pnpm; full steps under [Run locally](#run-locally)):
 
-- **Real:** every number on the dashboard. The snowpack readings are NRCS SNOTEL data and the forecast is from the National Weather Service, pulled on 11 October 2026 and committed as a snapshot. The marts are built from it by dbt, and a test rebuilds them and compares.
-- **Real:** every row and chart under "Ask the data". A preset's SQL is executed when you click it; nothing is precomputed.
-- **Hand-written for now:** the SQL, chart choice, and title behind the eight preset questions, and the two failed attempts in the sample retry trail. Each went through the real validator, and the errors shown are the ones that SQL really gets back. The app labels them "sample", never "recorded", and the labels follow each fixture's own flag.
+```bash
+pnpm install
+pnpm dev        # then open http://localhost:3140
+```
+
+The page opens on today's report, which in October is an off-season one. Click **Replay the best day of last winter**, then **Ask the data**:
+
+![The first screen, then one click to replay 19 February 2026 and a second click that asks which resort got the most snow last season, answered with a bar chart and the SQL behind it](docs/demo.gif)
+
+**What is real and what is a sample.** Demo data in this commit is hand-written sample output; `pnpm record` replaces it with real Claude Opus 5.5 runs.
+
+- **Real:** every number on the dashboard. The snow readings are NRCS SNOTEL data and the forecast is from the National Weather Service, pulled on 11 October 2026 and committed as a snapshot. The tables are built from it by dbt, and a test rebuilds them and compares.
+- **Real:** every row and chart under "Ask the data". Clicking a question runs its SQL in your browser, in DuckDB-WASM, against the same Parquet files the pipeline publishes; nothing is precomputed.
+- **Pre-written for now:** the SQL, chart choice, and title behind the eight example questions, and the two failed attempts in the sample retry trail. Each went through the real validator, and the errors shown are the ones that SQL really gets back. The app labels them as examples, never as recorded runs, and the labels follow each fixture's own flag.
 - **Not yet run against the real API:** the live Claude path. It is complete and covered by tests with a scripted client, and the UI was driven through every live state against a mocked endpoint, but no API key existed when this was built.
 
 ## Why it's interesting
@@ -40,7 +54,7 @@ What that means exactly:
 | Dark mode, with chart colors re-stepped for the dark surface | Off-season is a designed state: why every score is near zero, and one click to last winter |
 
 <p>
-  <img src="docs/mobile.png" alt="Powder Index on a phone in dark mode: the date bar and the top-ranked resort" width="260" />
+  <img src="docs/mobile.png" alt="Powder Index on a phone in dark mode: the headline question, the Ask the data button, and the date bar" width="260" />
   <img src="docs/mobile-ask.png" alt="Powder Index on a phone: a grouped bar chart answer and its SQL" width="260" />
 </p>
 
@@ -93,7 +107,7 @@ There is no server in the data path. The dashboard is a static page that reads f
 Each ramp is linear between its two anchors and clamped to 0..1. Three details matter:
 
 - **Lightness needs something to be light.** The density ramp is multiplied by `min(storm total ÷ 6 in, 1)`, so two inches of very dry snow does not score like a powder day. Cold counts only when there is snow on the ground.
-- **A forecast exists only for the day the pipeline ran.** On a replayed day that component is unknown, so it is left out and the other five weights are rescaled. That is why new snow is worth 38.9 points in the hero screenshot and 35 on the latest day.
+- **A forecast exists only for the day the pipeline ran.** On a replayed day that component is unknown, so it is left out and the other five weights are rescaled. That is why new snow is worth 38.9 points in the score-breakdown screenshot above and 35 on the latest day.
 - **The breakdown always adds up.** The headline score is the sum of the rounded parts, not a separately rounded total.
 
 Tiers: epic 75+, powder day 55+, soft turns 35+, firm 15+, off below that. Last winter produced 50 resort-days at "powder day" or better out of 4,380.
@@ -143,7 +157,7 @@ pnpm dev:api    # optional, in a second terminal: the Python function, for live 
 ## Tests & quality
 
 ```bash
-pnpm check                                   # lint, typecheck, 131 unit tests, production build
+pnpm check                                   # lint, typecheck, 133 unit tests, production build
 cd pipeline && uv run pytest -q              # 295 tests, including a full offline pipeline run
 ```
 
@@ -159,13 +173,13 @@ CI runs the same checks plus a gitleaks secret scan on every push.
 
 - **A station is a proxy, not the resort's stake.** New snow here is settled depth at midnight at a station near the resort. It reads well below a resort's own total, which is measured on a cleared board through the storm: the Alta station's season estimate is 238 inches. Rankings between resorts are more trustworthy than the absolute numbers.
 - **The weights are a judgment call.** They are one CSV file, documented and tested, but nobody has fitted them to skier ratings. A next step is to backtest them against resort-reported powder days.
-- **The live Claude path and the two deployments are unproven.** No key existed, and nothing was pushed or deployed. The function has run locally under uvicorn but never on Vercel, and the pipeline workflow has never run on GitHub; each of its commands was run locally.
+- **The live Claude path and the site deployment are unproven.** No key existed, and the site is not deployed yet. The function has run locally under uvicorn but never on Vercel. The pipeline workflow has run on GitHub on its daily schedule and pushed to the `gh-pages` branch, but GitHub Pages is not switched on yet, so the site uses the data bundled with it.
 - **The firewall bounds what a query can touch, not how long it runs.** A legal three-way self-join is still a SELECT. The browser kills a query after 10 seconds, and it is the visitor's own tab that does the work.
 - **Column names are not validated on purpose.** A wrong column is a correctness error that DuckDB reports, and that error is what the self-correction loop feeds back.
 - **Presets are pinned to winter 2025-26.** The pipeline keeps the previous water year plus the current one, so in October 2027 those dates leave the window and the presets need re-recording.
 - **DuckDB-WASM is about 7 MB compressed.** It loads on the first question, not on page load, so the dashboard itself stays light.
 - **Forecast days use a fixed UTC-7 offset** to match SNOTEL's standard-time day, so in summer the forecast day starts an hour off local time.
-- Until the pipeline workflow has published once, the browser console shows one failed request for the published manifest. The page falls back to the bundled data.
+- Until GitHub Pages serves the published data, the browser console shows one failed request for the published manifest. The page falls back to the bundled data.
 - Rate limiting is in memory per server instance: enough to blunt abuse of a demo, not a global quota.
 - Next: record the fixtures with a key, fit the weights, add an elevation adjustment between station and summit, and extend past Utah.
 
