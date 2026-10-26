@@ -56,43 +56,52 @@ jobs:
       # Each source falls back to the committed snapshot on its own when its API is down.
       # A forecast fallback is harmless: a stale forecast is only ever attached to its own
       # date, so today is scored on the other five components. A SNOTEL fallback is not:
-      # the snapshot is older than what yesterday's run published, so publishing it would
-      # move the site backwards. Stop here and leave yesterday's data in place.
-      - name: Refuse to publish a stale snowpack
+      # the snapshot is older than what the last run published, so publishing it would move
+      # the site backwards. In that case this run skips every step from here on. The job
+      # still succeeds, with a warning, and the site keeps the last published readings and
+      # shows their date. NRCS has blocked requests from GitHub's runners with HTTP 403.
+      - name: Decide whether to publish
+        id: guard
         run: |
           snotel=$(jq -r .snotel.source data/raw/meta.json)
           nws=$(jq -r .nws.source data/raw/meta.json)
           echo "snotel: $snotel, nws: $nws"
+          publish=true
           if [ "$nws" != "live" ] && [ "$OFFLINE" != "true" ]; then
             echo "::warning::The NWS pull failed ($(jq -r .nws.error data/raw/meta.json)). Publishing without a forecast."
           fi
           if [ "$snotel" != "live" ] && [ "$OFFLINE" != "true" ]; then
-            echo "::error::The SNOTEL pull failed ($(jq -r .snotel.error data/raw/meta.json)). Not publishing: the data already on Pages is newer than the snapshot."
-            exit 1
+            echo "::warning::The SNOTEL pull failed ($(jq -r .snotel.error data/raw/meta.json)). Skipping this run: the site keeps its last published readings. Refresh locally with: cd pipeline && uv run python -m powder run --update-snapshot"
+            publish=false
           fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
 
       - name: Source freshness, SNOTEL (blocks the run)
-        if: env.OFFLINE != 'true'
+        if: steps.guard.outputs.publish == 'true' && env.OFFLINE != 'true'
         run: uv run dbt source freshness $DBT --select source:raw.snotel_daily source:raw.snotel_stations
 
       - name: Source freshness, NWS (reported, does not block)
-        if: env.OFFLINE != 'true'
+        if: steps.guard.outputs.publish == 'true' && env.OFFLINE != 'true'
         continue-on-error: true
         run: uv run dbt source freshness $DBT --select source:raw.nws_forecast
 
       - name: dbt build (seeds, models, data tests, unit tests)
+        if: steps.guard.outputs.publish == 'true'
         run: uv run python -m powder build
 
       - name: Export Parquet and JSON
+        if: steps.guard.outputs.publish == 'true'
         run: uv run python -m powder export --out ../site/data
 
       - name: Generate dbt docs
+        if: steps.guard.outputs.publish == 'true'
         run: |
           uv run dbt docs generate $DBT
           mkdir -p ../site/docs
           cp dbt/target/index.html dbt/target/manifest.json dbt/target/catalog.json ../site/docs/
 
       - name: Publish to the gh-pages branch
+        if: steps.guard.outputs.publish == 'true'
         working-directory: site
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -121,12 +130,19 @@ jobs:
 
       - name: Summary
         if: always()
+        env:
+          PUBLISH: ${{ steps.guard.outputs.publish }}
         run: |
           {
             echo "### Pipeline run"
             if [ -f data/raw/meta.json ]; then
               echo "- SNOTEL: $(jq -r '.snotel.source + ", " + (.snotel.rows|tostring) + " rows"' data/raw/meta.json)"
               echo "- NWS: $(jq -r '.nws.source + ", " + (.nws.rows|tostring) + " rows"' data/raw/meta.json)"
+            fi
+            if [ "$PUBLISH" = "true" ]; then
+              echo "- Published a new run."
+            else
+              echo "- Not published: the SNOTEL source was unavailable. The site still shows its last published readings."
             fi
             if [ -f ../site/data/manifest.json ]; then
               echo "- Published readings through $(jq -r .asOf ../site/data/manifest.json)"
