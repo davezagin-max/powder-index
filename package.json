@@ -16,7 +16,8 @@
     "pipeline:offline": "cd pipeline && uv run python -m powder run --offline",
     "smoke": "cd pipeline && uv run pytest -q tests/test_smoke_live.py",
     "record": "cd pipeline && uv run python scripts/record.py",
-    "screenshots": "node scripts/screenshot.mjs"
+    "screenshots": "node scripts/screenshot.mjs",
+    "functional": "node scripts/functional.mjs"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "1.32.0",
