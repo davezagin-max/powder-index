@@ -120,6 +120,26 @@ describe("line charts", () => {
     expect(model.folded).toBe(3);
   });
 
+  it("refuses to draw a line through two rows that share an x value and a series", () => {
+    // A line cannot show two values at one point. Keeping the last one would hide the other
+    // without a word, so the table (which has every row) is shown with the reason.
+    const model = buildChartModel(
+      result([date("date"), number("new_snow_in")], [["2026-02-18", 3], ["2026-02-18", 9], ["2026-02-19", 4]]),
+      { type: "line", x: "date", y: "new_snow_in", series: null },
+    );
+    expect(model).toMatchObject({ kind: "table" });
+    if (model.kind !== "table") throw new Error("expected a table");
+    expect(model.reason).toMatch(/share the same/);
+  });
+
+  it("refuses a repeated category on a line, for the same reason", () => {
+    const model = buildChartModel(
+      result([text("month"), number("v")], [["Jan", 1], ["Feb", 2], ["Jan", 3]]),
+      { type: "line", x: "month", y: "v", series: null },
+    );
+    expect(model.kind).toBe("table");
+  });
+
   it("places text categories in the order the query returned them", () => {
     const model = buildChartModel(result([text("month"), number("v")], [["Nov", 3], ["Dec", 9], ["Jan", 7]]), {
       type: "line",

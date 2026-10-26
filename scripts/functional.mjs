@@ -43,6 +43,7 @@ const BEST = bundled.bestDays[0].date;
 const SECOND_BEST = bundled.bestDays[1].date;
 const INTRO_QUESTION = PRESETS.find((p) => p.id === "season-totals").question;
 const TRAIL_PRESET = PRESETS.find((p) => (fixtures[p.id]?.data.trail ?? []).length > 0);
+const LINE_PRESET = PRESETS.find((p) => fixtures[p.id]?.data.chart?.type === "line" && fixtures[p.id]?.data.chart?.series);
 const SEASON_TEMPLATE = fixtures["season-totals"].data;
 const TEST_KEY = "sk-ant-test-local-0000000000000000";
 const BAD_SQL = "SELECT no_such_column FROM resort_daily LIMIT 5";
@@ -484,6 +485,14 @@ async function dashboard(page) {
     return "click opens Alta; Enter opens Snowbird";
   });
 
+  await step(page, "F57", "Map markers also open a resort with the Space bar", async () => {
+    const brighton = page.locator('svg [role="button"][aria-label^="Brighton:"]').first();
+    await brighton.focus();
+    await page.keyboard.press(" ");
+    await poll(async () => (await detailName()) === "Brighton", "Space on the Brighton marker did not open Brighton");
+    return "Space opens Brighton";
+  });
+
   await step(page, "F24", "Resort selector changes the resort shown", async () => {
     const select = page.locator("#resort-select");
     must((await select.locator("option").count()) === RESORTS.length, "the selector does not list all resorts");
@@ -716,6 +725,32 @@ async function askDemo(page) {
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await poll(async () => (await page.locator("dialog[open]").count()) === 0, "Cancel did not close the dialog");
     return "bad key rejected in words; Cancel closes";
+  });
+
+  await step(page, "F56", "A line chart answer: the crosshair reads every series at the hovered date", async () => {
+    await clickPreset(page, LINE_PRESET.question);
+    must((await waitAnswer(page, LINE_PRESET.question)) === "answered", "the line question did not answer");
+    const overlay = ask().locator("figure div.cursor-crosshair");
+    must((await overlay.count()) === 1, `${await overlay.count()} crosshair surfaces, expected 1`);
+    const box = await overlay.boundingBox();
+    must(box, "the line chart is not laid out");
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.4);
+    await poll(async () => (await ask().locator("figure ul.tabular li").count()) >= 2, "the crosshair readout did not list the series");
+    const readout = await ask().locator("figure ul.tabular li").allTextContents();
+    await page.mouse.move(0, 0);
+    return `${readout.length} series read at the hovered date`;
+  });
+
+  await step(page, "F58", "Key dialog: a click on the backdrop closes it; Create a key opens the Claude keys page in a new tab", async () => {
+    await page.getByRole("button", { name: "Add key to ask your own" }).click();
+    const dialog = page.locator("dialog[open]");
+    await poll(async () => (await dialog.count()) === 1, "the dialog did not open");
+    const link = dialog.getByRole("link", { name: "Create a key" });
+    must((await link.getAttribute("href")) === "https://platform.claude.com/settings/keys", "Create a key does not link to the Claude keys page");
+    must((await link.getAttribute("target")) === "_blank", "Create a key does not open a new tab");
+    await page.mouse.click(4, 4);
+    await poll(async () => (await page.locator("dialog[open]").count()) === 0, "a click on the backdrop did not close the dialog");
+    return "backdrop click closes; Create a key opens platform.claude.com in a new tab";
   });
 }
 

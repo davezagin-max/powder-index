@@ -191,7 +191,15 @@ export function buildChartModel(result: QueryResult, spec: ChartSpec): ChartMode
   for (const row of rows) {
     const at = slot.get(groups.nameOf(row));
     if (at === undefined) continue;
-    series[at].values[index.get(keyOf(row))!] = Number(row[yAt]);
+    const point = index.get(keyOf(row))!;
+    // Two rows at one point cannot both be drawn. Keeping the last would drop the other
+    // without a word, so the table, which has every row, is shown instead.
+    if (series[at].values[point] !== null) {
+      return table(
+        `Two rows share the same ${readableColumn(xLabel)} and series, so a line cannot show both. Showing the table instead.`,
+      );
+    }
+    series[at].values[point] = Number(row[yAt]);
   }
   return {
     kind: "line",

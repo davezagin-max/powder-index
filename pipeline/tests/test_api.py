@@ -109,6 +109,29 @@ def test_oversized_body_is_rejected() -> None:
     assert res.status_code == 413
 
 
+def test_oversized_chunked_body_is_cut_off_without_a_declared_length() -> None:
+    # No Content-Length: the cap is enforced as the bytes arrive, not from the header.
+    def chunks():
+        yield b'{"question":"'
+        for _ in range(40):
+            yield b"a" * 512
+        yield b'"}'
+
+    res = client.post("/api/ask", content=chunks(), headers={"content-type": "application/json"})
+    assert res.status_code == 413
+    assert res.json() == {"ok": False, "error": {"kind": "too_large", "message": "Request body is too large."}}
+
+
+def test_an_empty_key_header_is_no_key_and_gets_demo_mode() -> None:
+    res = client.post(
+        "/api/ask",
+        json={"demoId": "season-totals", "question": "Which resort got the most snow last season?"},
+        headers={"x-anthropic-key": ""},
+    )
+    assert res.status_code == 200
+    assert res.json()["meta"]["mode"] == "demo"
+
+
 @pytest.mark.parametrize(
     "payload",
     [
@@ -120,6 +143,7 @@ def test_oversized_body_is_rejected() -> None:
         },  # one retry too many
         {"question": "deepest snow?", "attempts": [{"sql": "", "error": "e"}]},
         {"attempts": []},
+        {"demoId": "a" * 65, "question": "deepest snow?"},  # demoId capped at 64 characters
     ],
 )
 def test_invalid_bodies_get_the_standard_envelope(payload: dict) -> None:
