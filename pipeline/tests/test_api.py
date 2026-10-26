@@ -78,6 +78,32 @@ def test_malformed_key_is_rejected_and_not_echoed() -> None:
     assert "definitely-not-a-key" not in res.text
 
 
+def test_unknown_route_and_wrong_method_use_the_standard_envelope() -> None:
+    # Starlette raises its own HTTPException for these, not FastAPI's subclass.
+    missing = client.get("/no-such-route")
+    assert missing.status_code == 404
+    assert missing.json() == {"ok": False, "error": {"kind": "invalid", "message": "Not Found"}}
+    wrong_method = client.get("/api/ask")
+    assert wrong_method.status_code == 405
+    assert wrong_method.json() == {
+        "ok": False,
+        "error": {"kind": "invalid", "message": "Method Not Allowed"},
+    }
+
+
+def test_cors_allows_the_app_origin_and_no_other() -> None:
+    preflight = {"Access-Control-Request-Method": "POST"}
+    allowed = client.options(
+        "/api/ask",
+        headers={**preflight, "Origin": "http://localhost:3140"},
+    )
+    assert allowed.status_code == 200
+    assert allowed.headers["access-control-allow-origin"] == "http://localhost:3140"
+    other = client.options("/api/ask", headers={**preflight, "Origin": "https://evil.example"})
+    assert other.status_code == 400
+    assert "access-control-allow-origin" not in other.headers
+
+
 def test_oversized_body_is_rejected() -> None:
     res = client.post("/api/ask", content=b'{"question":"' + b"a" * 20_000 + b'"}')
     assert res.status_code == 413
