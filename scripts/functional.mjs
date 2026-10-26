@@ -732,10 +732,17 @@ async function askDemo(page) {
     must((await waitAnswer(page, LINE_PRESET.question)) === "answered", "the line question did not answer");
     const overlay = ask().locator("figure div.cursor-crosshair");
     must((await overlay.count()) === 1, `${await overlay.count()} crosshair surfaces, expected 1`);
-    const box = await overlay.boundingBox();
-    must(box, "the line chart is not laid out");
-    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.4);
-    await poll(async () => (await ask().locator("figure ul.tabular li").count()) >= 2, "the crosshair readout did not list the series");
+    // The chart can still resize for a moment after the answer appears, so measure and hover
+    // again on each attempt, the way a visitor's pointer would meet it.
+    let listed = false;
+    for (let attempt = 0; attempt < 25 && !listed; attempt++) {
+      const box = await overlay.boundingBox();
+      must(box, "the line chart is not laid out");
+      await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.4);
+      await page.waitForTimeout(200);
+      listed = (await ask().locator("figure ul.tabular li").count()) >= 2;
+    }
+    must(listed, "the crosshair readout did not list the series");
     const readout = await ask().locator("figure ul.tabular li").allTextContents();
     await page.mouse.move(0, 0);
     return `${readout.length} series read at the hovered date`;
