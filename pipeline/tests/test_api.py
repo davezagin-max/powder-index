@@ -119,7 +119,10 @@ def test_oversized_chunked_body_is_cut_off_without_a_declared_length() -> None:
 
     res = client.post("/api/ask", content=chunks(), headers={"content-type": "application/json"})
     assert res.status_code == 413
-    assert res.json() == {"ok": False, "error": {"kind": "too_large", "message": "Request body is too large."}}
+    assert res.json() == {
+        "ok": False,
+        "error": {"kind": "too_large", "message": "Request body is too large."},
+    }
 
 
 def test_an_empty_key_header_is_no_key_and_gets_demo_mode() -> None:
