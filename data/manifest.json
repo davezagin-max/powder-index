@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-10-31T17:49:05Z",
+  "asOf": "2026-10-31",
+  "firstDate": "2025-09-08",
+  "sources": {
+    "snotel": {
+      "mode": "live",
+      "fetchedAt": "2026-10-31T17:48:42Z"
+    },
+    "nws": {
+      "mode": "live",
+      "fetchedAt": "2026-10-31T17:48:49Z"
+    }
+  },
+  "rows": {
+    "resorts": 12,
+    "resort_daily": 5028,
+    "powder_score": 5028
+  },
+  "files": [
+    "resorts.parquet",
+    "resort_daily.parquet",
+    "powder_score.parquet",
+    "dashboard.json",
+    "schema.json",
+    "lineage.json"
+  ]
+}
