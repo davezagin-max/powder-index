@@ -1,0 +1,191 @@
+{
+  "nodes": [
+    {
+      "id": "model.powder_index.int_resort_days",
+      "name": "int_resort_days",
+      "layer": "intermediate",
+      "tests": 2
+    },
+    {
+      "id": "model.powder_index.int_resort_forecast",
+      "name": "int_resort_forecast",
+      "layer": "intermediate",
+      "tests": 5
+    },
+    {
+      "id": "model.powder_index.int_resort_station_weights",
+      "name": "int_resort_station_weights",
+      "layer": "intermediate",
+      "tests": 4
+    },
+    {
+      "id": "model.powder_index.int_station_days",
+      "name": "int_station_days",
+      "layer": "intermediate",
+      "tests": 2
+    },
+    {
+      "id": "model.powder_index.int_station_new_snow",
+      "name": "int_station_new_snow",
+      "layer": "intermediate",
+      "tests": 6
+    },
+    {
+      "id": "model.powder_index.powder_score",
+      "name": "powder_score",
+      "layer": "marts",
+      "tests": 16
+    },
+    {
+      "id": "model.powder_index.resort_daily",
+      "name": "resort_daily",
+      "layer": "marts",
+      "tests": 21
+    },
+    {
+      "id": "model.powder_index.resorts",
+      "name": "resorts",
+      "layer": "marts",
+      "tests": 7
+    },
+    {
+      "id": "seed.powder_index.powder_score_weights",
+      "name": "powder_score_weights",
+      "layer": "seed",
+      "tests": 6
+    },
+    {
+      "id": "seed.powder_index.powder_tiers",
+      "name": "powder_tiers",
+      "layer": "seed",
+      "tests": 4
+    },
+    {
+      "id": "seed.powder_index.resort_list",
+      "name": "resort_list",
+      "layer": "seed",
+      "tests": 6
+    },
+    {
+      "id": "seed.powder_index.resort_stations",
+      "name": "resort_stations",
+      "layer": "seed",
+      "tests": 4
+    },
+    {
+      "id": "source.powder_index.raw.nws_forecast",
+      "name": "nws_forecast",
+      "layer": "source",
+      "tests": 0
+    },
+    {
+      "id": "source.powder_index.raw.snotel_daily",
+      "name": "snotel_daily",
+      "layer": "source",
+      "tests": 0
+    },
+    {
+      "id": "source.powder_index.raw.snotel_stations",
+      "name": "snotel_stations",
+      "layer": "source",
+      "tests": 0
+    },
+    {
+      "id": "model.powder_index.stg_nws__forecast",
+      "name": "stg_nws__forecast",
+      "layer": "staging",
+      "tests": 4
+    },
+    {
+      "id": "model.powder_index.stg_snotel__daily",
+      "name": "stg_snotel__daily",
+      "layer": "staging",
+      "tests": 6
+    },
+    {
+      "id": "model.powder_index.stg_snotel__stations",
+      "name": "stg_snotel__stations",
+      "layer": "staging",
+      "tests": 2
+    }
+  ],
+  "edges": [
+    {
+      "from": "model.powder_index.int_resort_days",
+      "to": "model.powder_index.resort_daily"
+    },
+    {
+      "from": "model.powder_index.int_resort_forecast",
+      "to": "model.powder_index.resort_daily"
+    },
+    {
+      "from": "model.powder_index.int_resort_station_weights",
+      "to": "model.powder_index.int_resort_days"
+    },
+    {
+      "from": "model.powder_index.int_resort_station_weights",
+      "to": "model.powder_index.resorts"
+    },
+    {
+      "from": "model.powder_index.int_station_days",
+      "to": "model.powder_index.int_station_new_snow"
+    },
+    {
+      "from": "model.powder_index.int_station_new_snow",
+      "to": "model.powder_index.int_resort_days"
+    },
+    {
+      "from": "model.powder_index.resort_daily",
+      "to": "model.powder_index.powder_score"
+    },
+    {
+      "from": "model.powder_index.stg_nws__forecast",
+      "to": "model.powder_index.int_resort_forecast"
+    },
+    {
+      "from": "model.powder_index.stg_snotel__daily",
+      "to": "model.powder_index.int_station_days"
+    },
+    {
+      "from": "model.powder_index.stg_snotel__stations",
+      "to": "model.powder_index.int_resort_station_weights"
+    },
+    {
+      "from": "seed.powder_index.powder_score_weights",
+      "to": "model.powder_index.powder_score"
+    },
+    {
+      "from": "seed.powder_index.powder_tiers",
+      "to": "model.powder_index.powder_score"
+    },
+    {
+      "from": "seed.powder_index.resort_list",
+      "to": "model.powder_index.int_resort_station_weights"
+    },
+    {
+      "from": "seed.powder_index.resort_list",
+      "to": "model.powder_index.resort_daily"
+    },
+    {
+      "from": "seed.powder_index.resort_list",
+      "to": "model.powder_index.resorts"
+    },
+    {
+      "from": "seed.powder_index.resort_stations",
+      "to": "model.powder_index.int_resort_station_weights"
+    },
+    {
+      "from": "source.powder_index.raw.nws_forecast",
+      "to": "model.powder_index.stg_nws__forecast"
+    },
+    {
+      "from": "source.powder_index.raw.snotel_daily",
+      "to": "model.powder_index.stg_snotel__daily"
+    },
+    {
+      "from": "source.powder_index.raw.snotel_stations",
+      "to": "model.powder_index.stg_snotel__stations"
+    }
+  ],
+  "testCount": 86
+}
